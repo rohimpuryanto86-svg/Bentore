@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6C3CE1">
+    <meta name="description" content="BENTORE - Transportasi digital bentor Tidore">
+    <title>BENTORE - Bentor Tidore</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6C3CE1; --primary-dark: #5A2DBF; --secondary: #8B5CF6; --secondary-light: #A78BFA;
+            --bg-light: #F0EDFF; --dark: #1A1A2E; --white: #FFFFFF; --gray: #8888AA; --green: #2FB380;
+            --red: #FF4444; --amber: #E39B00; --shadow: 0 4px 12px rgba(108, 60, 225, 0.2); --radius: 16px;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-light); color: var(--dark); min-height: 100vh; padding-bottom: 90px; }
+
+        #splash { position: fixed; inset: 0; background: var(--primary); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s; }
+        #splash.hide { opacity: 0; pointer-events: none; }
+        .splash-content { text-align: center; color: var(--white); }
+        .logo-big { font-size: 80px; margin-bottom: 16px; }
+        .splash-content h1 { font-size: 48px; font-weight: 800; letter-spacing: 4px; }
+        .splash-content p { font-size: 16px; opacity: 0.9; margin-top: 8px; color: var(--secondary-light); }
+        .loader { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid var(--white); border-radius: 50%; animation: spin 1s linear infinite; margin: 24px auto 0; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #fatal { position: fixed; inset: 0; background: var(--bg-light); z-index: 9000; display: none; align-items: center; justify-content: center; padding: 24px; }
+        #fatal .box { background: var(--white); border-radius: 20px; padding: 28px 22px; max-width: 420px; box-shadow: var(--shadow); text-align: center; }
+        #fatal h2 { margin-bottom: 8px; }
+        #fatal p { color: var(--gray); font-size: 14px; margin-bottom: 16px; }
+
+        header { background: var(--primary); color: var(--white); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-left i { font-size: 24px; cursor: pointer; }
+        .app-title { font-size: 20px; font-weight: 700; }
+        .beta-tag { background: rgba(255,255,255,0.22); font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+        .header-right { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status-dot.online { background: #4CAF50; }
+        .status-dot.offline { background: #FF4444; }
+
+        .role-select { padding: 40px 20px; max-width: 400px; margin: 24px auto; text-align: center; }
+        .role-select h2 { margin-bottom: 24px; font-size: 24px; }
+        .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .role-card { background: var(--white); padding: 24px 16px; border-radius: var(--radius); box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .role-card:hover { transform: translateY(-4px); }
+        .role-card:active { transform: scale(0.95); }
+        .role-card i { font-size: 48px; color: var(--primary); margin-bottom: 12px; }
+        .role-card h3 { font-size: 18px; margin-bottom: 4px; }
+        .role-card p { font-size: 14px; color: var(--gray); }
+
+        .stats-card { background: var(--white); margin: 16px; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .stat-item { text-align: center; }
+        .stat-label { display: block; font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+        .stat-value { font-size: 20px; font-weight: 700; color: var(--primary); }
+
+        .btn-primary { background: var(--primary); color: var(--white); border: none; padding: 14px 24px; border-radius: var(--radius); font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+        .btn-primary:active { background: var(--primary-dark); transform: scale(0.98); }
+        .btn-primary:disabled, .btn-danger:disabled, .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-outline { background: var(--white); color: var(--primary); border: 2px solid var(--primary); padding: 12px 24px; border-radius: var(--radius); font-size: 15px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
+        .btn-danger { background: #FF4444; color: var(--white); border: none; padding: 14px 24px; border-radius: var(--radius); font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; margin-top: 8px; }
+        .btn-large { padding: 18px; font-size: 18px; }
+        .driver-actions { padding: 0 16px; margin-bottom: 16px; }
+
+        .order-list { padding: 0 16px; }
+        .order-list h3 { margin-bottom: 12px; font-size: 18px; }
+        .order-item { background: var(--white); padding: 16px; border-radius: var(--radius); margin-bottom: 10px; box-shadow: var(--shadow); }
+        .order-item .location { font-weight: 600; font-size: 14px; word-break: break-word; }
+        .order-item .detail { font-size: 13px; color: var(--gray); margin: 4px 0; }
+        .order-item .fare-input-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+        .order-item .fare-input-row input { flex: 1; min-width: 0; padding: 10px 12px; border: 2px solid #E8E0F0; border-radius: 10px; font-size: 15px; }
+        .order-item .fare-input-row button { background: var(--primary); color: var(--white); white-space: nowrap; border: none; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .order-item .fare-input-row button.btn-reject { background: #FDEAEA; color: var(--red); }
+        .order-item .ongoing-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .order-item .ongoing-actions button { flex: 1; margin-top: 0; width: auto; }
+        .empty-state { color: var(--gray); text-align: center; padding: 32px 0; }
+
+        .booking-form { background: var(--white); margin: 16px; padding: 24px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .booking-form h3 { margin-bottom: 16px; font-size: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        .form-group label i { color: var(--primary); margin-right: 6px; }
+        .form-input { width: 100%; padding: 12px 14px; border: 2px solid #E8E0F0; border-radius: 12px; font-size: 16px; background: var(--white); transition: border 0.2s; color: var(--dark); }
+        .form-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(108, 60, 225, 0.1); }
+        .input-with-btn { display: flex; gap: 8px; }
+        .input-with-btn .form-input { flex: 1; }
+        .locate-btn { background: var(--bg-light); border: none; color: var(--primary); width: 46px; border-radius: 12px; cursor: pointer; font-size: 18px; }
+        .payment-note { background: var(--bg-light); border: 1px dashed var(--secondary-light); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--primary-dark); margin-bottom: 16px; display: flex; gap: 8px; align-items: flex-start; }
+        .payment-note i { margin-top: 2px; }
+        #routePreviewMap { width: 100%; height: 160px; border-radius: 12px; margin-bottom: 16px; display: none; background: #E8E0F0; }
+        .maps-off-hint { font-size: 12px; color: var(--gray); background: #FFF8E6; border: 1px dashed #E0C061; padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; display: none; }
+
+        #nearbyBentors { padding: 0 16px; display: none; }
+        #nearbyBentors h3 { margin-bottom: 12px; }
+        .bentor-item { background: var(--white); padding: 16px; border-radius: var(--radius); margin-bottom: 10px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .bentor-item .name { font-weight: 600; word-break: break-word; }
+        .bentor-item .distance { font-size: 13px; color: var(--gray); margin-top: 2px; }
+        .bentor-item .pay-badges { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+        .bentor-item .book-btn { background: var(--primary); color: var(--white); border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+        .badge-cash { background: #E7F7EF; color: var(--green); }
+        .badge-transfer { background: #EDE7FB; color: var(--primary); }
+
+        .order-status { background: var(--white); margin: 16px; padding: 32px 24px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
+        #activeOrder { display: none; }
+        .status-icon { font-size: 64px; margin-bottom: 12px; }
+        .order-status h3 { font-size: 20px; margin-bottom: 8px; }
+        .order-status p { color: var(--gray); margin-bottom: 4px; word-break: break-word; }
+        .order-status .route-line { font-size: 13px; color: var(--dark); margin: 8px 0; }
+        .fare-box { background: var(--bg-light); border-radius: 12px; padding: 14px; margin: 12px 0; text-align: left; }
+        .fare-box .fare-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+        .fare-box .fare-row.total { font-weight: 700; color: var(--primary); font-size: 18px; border-top: 1px dashed #D7CCF5; padding-top: 8px; margin-top: 6px; }
+        .bank-detail-box { background: var(--white); border: 2px solid var(--secondary-light); border-radius: 12px; padding: 14px; margin: 12px 0; text-align: left; }
+        .bank-detail-box .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; gap: 8px; }
+        .bank-detail-box .row:last-child { margin-bottom: 0; }
+        .bank-detail-box .label { color: var(--gray); font-size: 12px; }
+        .bank-detail-box .value { font-weight: 700; word-break: break-all; text-align: right; }
+        .copy-btn { background: var(--bg-light); border: none; color: var(--primary); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .waiting-pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); margin-right: 6px; animation: pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); display: none; justify-content: space-around; padding: 10px 0 16px; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--gray); cursor: pointer; font-size: 12px; padding: 0 8px; }
+        .nav-item i { font-size: 24px; }
+        .nav-item.active { color: var(--primary); }
+
+        #driverView, #passengerView { display: none; }
+        .page { display: none; padding-bottom: 20px; }
+        .page.active { display: block; }
+        .page-title { padding: 16px 16px 0; font-size: 20px; font-weight: 700; }
+
+        .list-card { background: var(--white); margin: 12px 16px; padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .list-card .top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .list-card .status-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+        .status-completed { background: #E7F7EF; color: var(--green); }
+        .status-ongoing { background: #FFF4E0; color: #E39B00; }
+        .status-waiting_fare { background: #EAF2FF; color: #2F6FB3; }
+        .status-waiting_confirmation { background: #FFF0DA; color: #B36B00; }
+        .status-cancelled, .status-rejected { background: #FDEAEA; color: var(--red); }
+        .list-card .route { font-size: 14px; margin-bottom: 4px; word-break: break-word; }
+        .list-card .meta { font-size: 12px; color: var(--gray); }
+        .list-card .fare-tag { font-weight: 700; color: var(--primary); }
+
+        .profile-card { background: var(--white); margin: 16px; padding: 24px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
+        .profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--bg-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 12px; }
+        .profile-card h3 { font-size: 20px; margin-bottom: 4px; word-break: break-word; }
+        .profile-card p { color: var(--gray); font-size: 14px; }
+
+        .settings-block { background: var(--white); margin: 12px 16px; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .settings-block h4 { font-size: 15px; margin-bottom: 14px; }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0EDFF; gap: 10px; }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-row .toggle-label { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+        .toggle-row .toggle-label i { color: var(--primary); font-size: 18px; width: 22px; text-align: center; }
+        .toggle-row span:last-child { text-align: right; word-break: break-word; }
+        .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle { position: absolute; cursor: pointer; inset: 0; background-color: #D9D3EE; transition: .2s; border-radius: 26px; }
+        .slider-toggle:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+        .switch input:checked + .slider-toggle { background-color: var(--primary); }
+        .switch input:checked + .slider-toggle:before { transform: translateX(20px); }
+        .bank-fields { display: none; margin-top: 8px; }
+        .bank-fields.show { display: block; }
+
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(26,26,46,0.5); z-index: 200; display: none; }
+        .sidebar-overlay.show { display: block; }
+        .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--white); z-index: 201; transition: left 0.25s ease; box-shadow: 4px 0 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+        .sidebar.show { left: 0; }
+        .sidebar-header { background: var(--primary); color: var(--white); padding: 28px 20px; }
+        .sidebar-header .name { font-weight: 700; font-size: 18px; word-break: break-word; }
+        .sidebar-header .role { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+        .sidebar-nav { padding: 10px 0; flex: 1; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 14px; padding: 14px 20px; color: var(--dark); text-decoration: none; font-size: 15px; cursor: pointer; }
+        .sidebar-nav a i { width: 20px; color: var(--primary); }
+        .sidebar-nav a:active { background: var(--bg-light); }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid #EEE; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(26,26,46,0.55); z-index: 300; display: none; align-items: flex-end; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: var(--white); width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 24px; max-height: 88vh; overflow-y: auto; animation: slideUp 0.25s ease; }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-box h3 { margin-bottom: 4px; }
+        .modal-box .modal-sub { color: var(--gray); font-size: 13px; margin-bottom: 16px; }
+        .modal-close { text-align: center; margin-top: 4px; }
+        .pay-option { border: 2px solid #E8E0F0; border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+        .pay-option.selected { border-color: var(--primary); background: var(--bg-light); }
+        .pay-option i { font-size: 22px; color: var(--primary); }
+        .pay-option .pt-title { font-weight: 700; font-size: 15px; }
+        .pay-option .pt-sub { font-size: 12px; color: var(--gray); }
+
+        #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--dark); color: var(--white); padding: 12px 20px; border-radius: 30px; font-size: 14px; z-index: 9500; opacity: 0; transition: 0.25s; pointer-events: none; max-width: 90%; text-align: center; }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .blocked-banner { background: #FDEAEA; color: #C0392B; margin: 16px; padding: 16px; border-radius: var(--radius); font-size: 14px; display: none; gap: 10px; align-items: flex-start; }
+
+        .ad-banner { margin: 12px 16px; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); position: relative; display: none; cursor: pointer; }
+        .ad-banner img { width: 100%; display: block; max-height: 140px; object-fit: cover; }
+        .ad-banner .ad-tag { position: absolute; top: 6px; right: 8px; background: rgba(26,26,46,0.6); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+        .ad-banner .ad-caption { padding: 8px 12px; font-size: 12px; color: var(--gray); background: var(--white); }
+
+        @media (max-width: 480px) {
+            .role-grid { grid-template-columns: 1fr; }
+            .stat-value { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="splash">
+    <div class="splash-content">
+        <div class="logo-big">🛺</div>
+        <h1>BENTORE</h1>
+        <p>Transportasi Digital Tidore</p>
+        <div class="loader"></div>
+    </div>
+</div>
+
+<div id="fatal"><div class="box">
+    <div style="font-size:48px;">⚠️</div>
+    <h2 id="fatalTitle">Terjadi masalah</h2>
+    <p id="fatalMsg"></p>
+    <button class="btn-primary" onclick="location.reload()"><i class="fas fa-rotate"></i> Muat Ulang</button>
+</div></div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="name" id="sideName">Pengguna</div>
+        <div class="role" id="sideRole">-</div>
+    </div>
+    <div class="sidebar-nav">
+        <a onclick="navigateTo('home')"><i class="fas fa-home"></i> Beranda</a>
+        <a onclick="navigateTo('history')"><i class="fas fa-history"></i> Riwayat</a>
+        <a onclick="navigateTo('profile')"><i class="fas fa-user"></i> Profil</a>
+        <a onclick="navigateTo('settings')" id="sidePaymentMenu" style="display:none;"><i class="fas fa-money-check-alt"></i> Metode Pembayaran</a>
+        <a onclick="showAbout()"><i class="fas fa-circle-info"></i> Tentang BENTORE</a>
+    </div>
+    <div class="sidebar-footer">
+        <button class="btn-outline" onclick="switchRole()"><i class="fas fa-right-left"></i> Ganti Peran</button>
+    </div>
+</div>
+
+<div id="app">
+    <header>
+        <div class="header-left">
+            <i class="fas fa-bars" id="menuToggle" role="button" aria-label="Menu"></i>
+            <span class="app-title">💜 BENTORE<span class="beta-tag">BETA</span></span>
+        </div>
+        <div class="header-right">
+            <span id="statusDot" class="status-dot offline"></span>
+            <span id="statusText">Offline</span>
+        </div>
+    </header>
+
+    <div id="adZoneHomeTop" class="ad-banner"></div>
+
+    <div id="roleSelect" class="role-select">
+        <h2>Pilih Peran Anda</h2>
+        <div class="role-grid">
+            <div class="role-card" onclick="setRole('driver')">
+                <i class="fas fa-motorcycle"></i><h3>Pengemudi</h3><p>Saya punya bentor</p>
+            </div>
+            <div class="role-card" onclick="setRole('passenger')">
+                <i class="fas fa-user"></i><h3>Penumpang</h3><p>Saya mau naik bentor</p>
+            </div>
+        </div>
+        <p style="margin-top:20px; font-size:12px; color:var(--gray);">
+            <i class="fas fa-circle-info"></i> Bentor bisa memuat hingga 3 penumpang. Tarif ditentukan langsung oleh pengemudi sesuai jumlah penumpang &amp; jarak. Pembayaran: Tunai atau Transfer ke rekening pengemudi.
+        </p>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+        <!-- Driver View -->
+        <div id="driverView">
+            <div id="driverBlockedBanner" class="blocked-banner">
+                <i class="fas fa-triangle-exclamation"></i>
+                <div>Akun Anda dinonaktifkan sementara oleh admin BENTORE. Silakan hubungi admin untuk info lebih lanjut.</div>
+            </div>
+            <div class="stats-card">
+                <div class="stat-item"><span class="stat-label">Order Hari Ini</span><span class="stat-value" id="todayOrders">0</span></div>
+                <div class="stat-item"><span class="stat-label">Pendapatan</span><span class="stat-value" id="todayIncome">Rp0</span></div>
+                <div class="stat-item"><span class="stat-label">Rating</span><span class="stat-value" id="driverRating">⭐ 5.0</span></div>
+            </div>
+            <div class="driver-actions">
+                <button class="btn-primary btn-large" onclick="toggleOnline()" id="onlineBtn"><i class="fas fa-power-off"></i> Mulai Jalan</button>
+                <button class="btn-outline" onclick="navigateTo('settings')"><i class="fas fa-money-check-alt"></i> Atur Metode Pembayaran &amp; Data</button>
+                <p style="font-size:12px; color:var(--gray); margin-top:10px; text-align:center;">Biarkan layar &amp; aplikasi tetap terbuka saat "Online" agar tetap terlihat oleh penumpang.</p>
+            </div>
+            <div class="order-list" id="orderList">
+                <h3>📋 Order Masuk (Perlu Diisi Tarif)</h3>
+                <div id="waitingOrdersContainer"><p class="empty-state">Belum ada order masuk</p></div>
+                <h3 style="margin-top:20px;">🛺 Order Sedang Berjalan</h3>
+                <div id="ongoingOrdersContainer"><p class="empty-state">Tidak ada order berjalan</p></div>
+            </div>
+        </div>
+
+        <!-- Passenger View -->
+        <div id="passengerView">
+            <div class="booking-form" id="bookingForm">
+                <h3>📍 Pesan Bentor</h3>
+                <div class="payment-note">
+                    <i class="fas fa-wallet"></i>
+                    <span>Bentor memuat hingga <b>3 penumpang</b>. Tarif perjalanan akan ditentukan langsung oleh pengemudi. Pembayaran: <b>Tunai</b> atau <b>Transfer</b> ke rekening pengemudi.</span>
+                </div>
+                <p class="maps-off-hint" id="mapsOffHint"><i class="fas fa-map"></i> Pencarian alamat otomatis belum aktif. Anda tetap bisa mengetik lokasi secara manual.</p>
+                <div class="form-group">
+                    <label for="pickupLocation"><i class="fas fa-map-marker-alt"></i> Lokasi Jemput</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="pickupLocation" maxlength="200" placeholder="Contoh: Taman Nukila" class="form-input" autocomplete="off">
+                        <button type="button" class="locate-btn" title="Gunakan lokasi saya" onclick="useMyLocation()"><i class="fas fa-location-crosshairs"></i></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="dropLocation"><i class="fas fa-flag-checkered"></i> Lokasi Tujuan</label>
+                    <input type="text" id="dropLocation" maxlength="200" placeholder="Contoh: Pantai Tafaga" class="form-input" autocomplete="off">
+                </div>
+                <div id="routePreviewMap"></div>
+                <div class="form-group">
+                    <label for="passengerCount"><i class="fas fa-users"></i> Jumlah Penumpang</label>
+                    <select id="passengerCount" class="form-input">
+                        <option value="1">1 Orang</option>
+                        <option value="2">2 Orang</option>
+                        <option value="3">3 Orang (Maksimal)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="serviceType"><i class="fas fa-box"></i> Jenis Layanan</label>
+                    <select id="serviceType" class="form-input">
+                        <option value="passenger">👤 Penumpang</option>
+                        <option value="cargo">📦 Barang</option>
+                    </select>
+                </div>
+                <button class="btn-primary btn-large" id="findBtn" onclick="findBentor()"><i class="fas fa-search"></i> Cari Bentor Terdekat</button>
+            </div>
+
+            <div id="adZoneSearchResults" class="ad-banner"></div>
+
+            <div id="nearbyBentors">
+                <h3>🛺 Bentor Tersedia</h3>
+                <p style="padding:0 0 10px; font-size:12px; color:var(--gray);">Tarif akan disampaikan pengemudi setelah order diterima, sesuai jarak &amp; jumlah penumpang.</p>
+                <div id="bentorList"></div>
+            </div>
+
+            <div id="activeOrder">
+                <div class="order-status">
+                    <div class="status-icon" id="activeStatusIcon">⏳</div>
+                    <h3 id="orderStatusTitle">Menunggu Pengemudi</h3>
+                    <div class="route-line" id="activeRoute"></div>
+                    <p id="driverName">Driver: -</p>
+                    <p id="driverPhone">Kontak: -</p>
+                    <div class="fare-box" id="activeFareBox" style="display:none;"></div>
+                    <div class="bank-detail-box" id="activeBankBox" style="display:none;"></div>
+                    <button class="btn-danger" onclick="cancelOrder()" id="cancelOrderBtn"><i class="fas fa-times"></i> Batalkan Order</button>
+                    <button class="btn-primary" onclick="passengerConfirmCompletion()" id="confirmDoneBtn" style="display:none;"><i class="fas fa-check-double"></i> Konfirmasi Perjalanan Selesai</button>
+                    <button class="btn-primary" onclick="acknowledgeCompleted()" id="okOrderBtn" style="display:none;"><i class="fas fa-check"></i> Selesai, Pesan Lagi</button>
+                    <button class="btn-outline" onclick="backToSearch()" id="searchAgainBtn" style="display:none;"><i class="fas fa-search"></i> Cari Pengemudi Lain</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Riwayat -->
+        <div class="page" id="historyPage">
+            <div class="page-title">📋 Riwayat Perjalanan</div>
+            <div id="adZoneHistoryTop" class="ad-banner"></div>
+            <div id="historyList"></div>
+        </div>
+
+        <!-- Profil -->
+        <div class="page" id="profilePage">
+            <div class="profile-card">
+                <div class="profile-avatar"><i class="fas fa-user"></i></div>
+                <h3 id="profileName">-</h3>
+                <p id="profilePhone">-</p>
+            </div>
+            <div id="passengerProfileForm" style="display:none;">
+                <div class="settings-block">
+                    <h4>Edit Data Diri</h4>
+                    <div class="form-group"><label>Nama</label><input type="text" id="pProfileName" maxlength="80" class="form-input"></div>
+                    <div class="form-group"><label>No. HP / Email</label><input type="text" id="pProfileContact" maxlength="80" class="form-input"></div>
+                    <div class="form-group"><label>Alamat</label><input type="text" id="pProfileAddress" maxlength="200" class="form-input"></div>
+                    <button class="btn-primary" onclick="savePassengerProfile()"><i class="fas fa-save"></i> Simpan</button>
+                </div>
+            </div>
+            <div id="driverProfileSummary" style="display:none;">
+                <div class="settings-block">
+                    <h4>Ringkasan Pengemudi</h4>
+                    <div class="toggle-row"><div class="toggle-label"><i class="fas fa-id-card"></i> Plat Bentor</div><span id="dProfilePlate">-</span></div>
+                    <div class="toggle-row"><div class="toggle-label"><i class="fas fa-location-dot"></i> Alamat</div><span id="dProfileAddress">-</span></div>
+                    <div class="toggle-row"><div class="toggle-label"><i class="fas fa-star"></i> Rating</div><span id="dProfileRating">-</span></div>
+                    <div class="toggle-row"><div class="toggle-label"><i class="fas fa-route"></i> Total Order</div><span id="dProfileOrders">-</span></div>
+                </div>
+                <div class="driver-actions">
+                    <button class="btn-outline" onclick="navigateTo('settings')"><i class="fas fa-money-check-alt"></i> Atur Metode Pembayaran &amp; Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pengaturan Driver -->
+        <div class="page" id="settingsPage">
+            <div class="page-title">💳 Metode Pembayaran &amp; Data</div>
+            <p style="padding:4px 16px 0; font-size:13px; color:var(--gray);">Atur bagaimana penumpang membayar Anda. Minimal satu metode harus aktif.</p>
+            <div class="settings-block">
+                <div class="toggle-row">
+                    <div class="toggle-label"><i class="fas fa-money-bill-wave"></i> Terima Tunai (Cash)</div>
+                    <label class="switch"><input type="checkbox" id="payCash" onchange="onPayToggleChange()"><span class="slider-toggle"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-label"><i class="fas fa-building-columns"></i> Terima Transfer Bank</div>
+                    <label class="switch"><input type="checkbox" id="payTransfer" onchange="onPayToggleChange()"><span class="slider-toggle"></span></label>
+                </div>
+                <div class="bank-fields" id="bankFields">
+                    <div class="form-group">
+                        <label>Nama Bank</label>
+                        <select id="bankName" class="form-input" onchange="onBankSelectChange()">
+                            <option value="Bank Maluku Utara">Bank Maluku Utara (Bank Malut)</option>
+                            <option value="BRI">BRI</option>
+                            <option value="BNI">BNI</option>
+                            <option value="BCA">BCA</option>
+                            <option value="Mandiri">Mandiri</option>
+                            <option value="BSI">BSI</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="bankNameOtherGroup" style="display:none;">
+                        <label>Nama Bank Lainnya</label>
+                        <input type="text" id="bankNameOther" maxlength="60" class="form-input" placeholder="Contoh: Bank Jago">
+                    </div>
+                    <div class="form-group">
+                        <label>Nomor Rekening</label>
+                        <input type="text" id="bankAccount" maxlength="30" class="form-input" placeholder="Contoh: 0123456789" inputmode="numeric">
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Pemilik Rekening</label>
+                        <input type="text" id="bankHolder" maxlength="80" class="form-input" placeholder="Sesuai buku tabungan">
+                    </div>
+                </div>
+            </div>
+            <div class="settings-block">
+                <h4>Data Pengemudi</h4>
+                <div class="form-group"><label>Nama</label><input type="text" id="setDriverName" maxlength="80" class="form-input"></div>
+                <div class="form-group"><label>No. HP / Email</label><input type="text" id="setDriverContact" maxlength="80" class="form-input"></div>
+                <div class="form-group"><label>Alamat</label><input type="text" id="setDriverAddress" maxlength="200" class="form-input"></div>
+                <div class="form-group"><label>Plat Bentor <span style="font-weight:400; color:var(--gray);">(opsional)</span></label><input type="text" id="setDriverPlate" maxlength="20" class="form-input" placeholder="Contoh: DG 1234 XX"></div>
+            </div>
+            <div class="driver-actions">
+                <button class="btn-primary btn-large" id="saveSettingsBtn" onclick="saveDriverSettings()"><i class="fas fa-save"></i> Simpan Pengaturan</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav" id="bottomNav">
+        <div class="nav-item active" onclick="navigateTo('home', this)"><i class="fas fa-home"></i><span>Beranda</span></div>
+        <div class="nav-item" onclick="navigateTo('history', this)"><i class="fas fa-history"></i><span>Riwayat</span></div>
+        <div class="nav-item" onclick="navigateTo('profile', this)"><i class="fas fa-user"></i><span>Profil</span></div>
+    </nav>
+</div>
+
+<!-- Registrasi Driver -->
+<div class="modal-overlay" id="regDriverModal">
+    <div class="modal-box">
+        <h3>🛺 Daftar Sebagai Pengemudi</h3>
+        <p class="modal-sub">Cukup data singkat untuk mulai menerima order. Plat bentor bisa dilengkapi nanti.</p>
+        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="regName" maxlength="80" class="form-input" placeholder="Nama Anda"></div>
+        <div class="form-group"><label>No. HP / Email</label><input type="text" id="regContact" maxlength="80" class="form-input" placeholder="08xxxxxxxxxx atau email"></div>
+        <div class="form-group"><label>Alamat</label><input type="text" id="regAddress" maxlength="200" class="form-input" placeholder="Alamat tempat tinggal"></div>
+        <button class="btn-primary btn-large" id="regDriverBtn" onclick="registerDriver()"><i class="fas fa-check"></i> Daftar &amp; Mulai</button>
+        <div class="modal-close"><button class="btn-outline" onclick="cancelRegistration('regDriverModal')">Batal</button></div>
+    </div>
+</div>
+
+<!-- Registrasi Penumpang -->
+<div class="modal-overlay" id="regPassengerModal">
+    <div class="modal-box">
+        <h3>👤 Daftar Sebagai Penumpang</h3>
+        <p class="modal-sub">Cukup data singkat supaya pengemudi bisa menghubungi Anda.</p>
+        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="pRegName" maxlength="80" class="form-input" placeholder="Nama Anda"></div>
+        <div class="form-group"><label>No. HP / Email</label><input type="text" id="pRegContact" maxlength="80" class="form-input" placeholder="08xxxxxxxxxx atau email"></div>
+        <div class="form-group"><label>Alamat</label><input type="text" id="pRegAddress" maxlength="200" class="form-input" placeholder="Alamat tempat tinggal"></div>
+        <button class="btn-primary btn-large" id="regPassengerBtn" onclick="registerPassenger()"><i class="fas fa-check"></i> Daftar &amp; Mulai</button>
+        <div class="modal-close"><button class="btn-outline" onclick="cancelRegistration('regPassengerModal')">Batal</button></div>
+    </div>
+</div>
+
+<!-- Pilih Metode Pembayaran -->
+<div class="modal-overlay" id="paymentModal">
+    <div class="modal-box">
+        <h3>💳 Pilih Metode Pembayaran</h3>
+        <p class="modal-sub">Pembayaran dilakukan langsung ke pengemudi. Jumlah tarif akan ditentukan pengemudi setelah order diterima.</p>
+        <div id="paymentOptions"></div>
+        <div id="paymentBankPreview"></div>
+        <button class="btn-primary btn-large" onclick="confirmBooking()" id="confirmBookingBtn" style="margin-top:12px;"><i class="fas fa-check"></i> Konfirmasi Pesanan</button>
+        <div class="modal-close"><button class="btn-outline" onclick="closeModal('paymentModal')">Batal</button></div>
+    </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(() => {
+    'use strict';
+
+    // =====================================================================
+    // KONFIGURASI & UTILITAS
+    // =====================================================================
+    const CFG = window.BENTORE_CONFIG || {};
+    const CONFIGURED = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && !/YOUR-/.test(CFG.SUPABASE_URL + CFG.SUPABASE_ANON_KEY));
+    const LS_ROLE = 'bentore_role';
+    const ACTIVE_STATUSES = ['waiting_fare', 'ongoing', 'waiting_confirmation'];
+    const STATUS_LABEL = { completed: 'Selesai', ongoing: 'Berlangsung', waiting_confirmation: 'Menunggu Konfirmasi', waiting_fare: 'Menunggu Tarif', cancelled: 'Dibatalkan', rejected: 'Ditolak Pengemudi' };
+    const ERRORS = {
+        not_authenticated: 'Sesi berakhir. Muat ulang halaman.',
+        passenger_profile_missing: 'Lengkapi data diri penumpang terlebih dahulu.',
+        driver_unavailable: 'Pengemudi sudah tidak tersedia. Silakan cari lagi.',
+        self_order: 'Anda tidak bisa memesan bentor Anda sendiri.',
+        payment_not_accepted: 'Metode pembayaran tidak diterima pengemudi ini.',
+        active_order_exists: 'Anda masih punya order yang aktif.',
+        invalid_location: 'Lokasi jemput/tujuan tidak valid.',
+        invalid_fare: 'Tarif tidak valid (maks. Rp10.000.000).',
+        driver_blocked: 'Akun Anda dinonaktifkan admin.',
+        invalid_transition: 'Status order sudah berubah. Data diperbarui.',
+        too_early: 'Tunggu minimal 5 menit sebelum menandai selesai tanpa konfirmasi penumpang.',
+        driver_missing: 'Data pengemudi tidak ditemukan.'
+    };
+
+    let sb = null, userId = null;
+    let currentRole = null, currentDriver = null, activeOrder = null;
+    let pendingBooking = null, selectedPaymentMethod = null;
+    let driversCache = {};
+    let pickupLatLng = null, dropLatLng = null, driverAddrLatLng = null;
+    let regDriverLatLng = null, regPassengerLatLng = null, profileLatLng = null;
+    let pollTimer = null, driverTimer = null, heartbeatTimer = null, rtChannel = null, rtDebounce = null;
+    let refreshingDriver = false, mapsReady = false, adsCache = { at: 0, list: [] };
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const formatRupiah = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const safeUrl = (u) => (/^https?:\/\//i.test(u || '') ? u : '');
+    const setHtml = (el, html) => { if (el._last !== html) { el.innerHTML = html; el._last = html; } };
+
+    function toast(msg) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    function errMsg(e) {
+        const m = (e && e.message) || '';
+        for (const k in ERRORS) if (m.includes(k)) return ERRORS[k];
+        if (!navigator.onLine) return 'Tidak ada koneksi internet.';
+        return 'Terjadi kesalahan. Coba lagi.';
+    }
+    function fail(e, ctx) { console.error(ctx || '', e); toast(errMsg(e)); }
+    function showFatal(title, msg) {
+        $('fatalTitle').textContent = title;
+        $('fatalMsg').textContent = msg;
+        $('fatal').style.display = 'flex';
+    }
+    async function withBusy(btn, fn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        try { return await fn(); } finally { btn.disabled = false; }
+    }
+    function haversineKm(a, b) {
+        if (!a || !b) return null;
+        const R = 6371, rad = (d) => d * Math.PI / 180;
+        const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+        const x = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+        return +(R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))).toFixed(1);
+    }
+    function startOfTodayISO() { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); }
+    function openModal(id) { $(id).classList.add('show'); }
+    function closeModal(id) { $(id).classList.remove('show'); }
+
+    // =====================================================================
+    // DATA LAYER (Supabase)
+    // =====================================================================
+    async function getMyDriver() {
+        const { data, error } = await sb.from('drivers').select('*').eq('user_id', userId).maybeSingle();
+        if (error) throw error;
+        return data;
+    }
+    async function getMyPassenger() {
+        const { data, error } = await sb.from('passengers').select('*').eq('user_id', userId).maybeSingle();
+        if (error) throw error;
+        return data;
+    }
+    async function rpc(name, args) {
+        const { data, error } = await sb.rpc(name, args || {});
+        if (error) throw error;
+        return data;
+    }
+    async function loadAds() {
+        if (Date.now() - adsCache.at < 60000) return adsCache.list;
+        const { data } = await sb.from('ads').select('*').eq('active', true);
+        adsCache = { at: Date.now(), list: data || [] };
+        return adsCache.list;
+    }
+
+    // =====================================================================
+    // BOOT
+    // =====================================================================
+    async function boot() {
+        if (!CONFIGURED) {
+            showFatal('Belum dikonfigurasi', 'Isi SUPABASE_URL dan SUPABASE_ANON_KEY di file config.js, lalu muat ulang.');
+            return;
+        }
+        if (!window.supabase) throw new Error('supabase-js gagal dimuat');
+        sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
+            auth: { storageKey: 'bentore-app-auth', persistSession: true, autoRefreshToken: true }
+        });
+        let { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            const { data, error } = await sb.auth.signInAnonymously();
+            if (error) throw error;
+            session = data.session;
+        }
+        userId = session.user.id;
+        subscribeRealtime();
+        loadGoogleMapsIfConfigured();
+        renderAdZone('home_top', 'adZoneHomeTop');
+        const saved = localStorage.getItem(LS_ROLE);
+        if (saved === 'driver' || saved === 'passenger') await setRole(saved);
+    }
+
+    window.addEventListener('load', () => {
+        Promise.all([
+            boot().catch((e) => { console.error(e); showFatal('Tidak bisa terhubung', 'Periksa koneksi internet Anda lalu muat ulang. Jika masih gagal, hubungi admin BENTORE.'); }),
+            sleep(1200)
+        ]).then(() => $('splash').classList.add('hide'));
+        updateStatusIndicator();
+    });
+    window.addEventListener('online', () => { toast('Kembali online'); updateStatusIndicator(); onLiveChange(); });
+    window.addEventListener('offline', () => { toast('Tidak ada koneksi internet'); updateStatusIndicator(); });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && sb) {
+            onLiveChange();
+            if (currentRole === 'driver' && currentDriver && currentDriver.online) sendHeartbeat();
+        }
+    });
+
+    // Event delegation untuk tombol salin
+    document.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-copy]');
+        if (b) navigator.clipboard.writeText(b.dataset.copy).then(() => toast('Nomor rekening disalin')).catch(() => toast('Gagal menyalin'));
+    });
+
+    // =====================================================================
+    // REALTIME + POLLING CADANGAN
+    // =====================================================================
+    function subscribeRealtime() {
+        if (rtChannel) return;
+        rtChannel = sb.channel('bentore-live')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, scheduleLive)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, scheduleLive)
+            .subscribe();
+    }
+    function scheduleLive() { clearTimeout(rtDebounce); rtDebounce = setTimeout(onLiveChange, 250); }
+    function onLiveChange() {
+        if (!sb) return;
+        if (currentRole === 'driver' && currentDriver) refreshDriverOrders();
+        else if (currentRole === 'passenger' && activeOrder) pollOrderStatus();
+    }
+    function clearTimers() {
+        [pollTimer, driverTimer, heartbeatTimer].forEach((t) => t && clearInterval(t));
+        pollTimer = driverTimer = heartbeatTimer = null;
+    }
+
+    // =====================================================================
+    // GOOGLE MAPS (key diatur admin, disimpan di tabel settings)
+    // =====================================================================
+    async function loadGoogleMapsIfConfigured() {
+        try {
+            const { data } = await sb.from('settings').select('value').eq('key', 'google_maps_api_key').maybeSingle();
+            const key = data && data.value;
+            if (!key) { $('mapsOffHint').style.display = 'block'; return; }
+            if (window.google && window.google.maps) { onMapsReady(); return; }
+            window.gm_authFailure = () => { mapsReady = false; $('mapsOffHint').style.display = 'block'; toast('Google Maps API Key bermasalah. Hubungi admin.'); };
+            window.onMapsReady = onMapsReady;
+            const s = document.createElement('script');
+            s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&callback=onMapsReady';
+            s.async = true;
+            s.onerror = () => { $('mapsOffHint').style.display = 'block'; };
+            document.head.appendChild(s);
+        } catch (e) { $('mapsOffHint').style.display = 'block'; }
+    }
+    function onMapsReady() {
+        mapsReady = true;
+        $('mapsOffHint').style.display = 'none';
+        attachAutocomplete('pickupLocation', (p) => { pickupLatLng = p; maybeShowRoutePreview(); });
+        attachAutocomplete('dropLocation', (p) => { dropLatLng = p; maybeShowRoutePreview(); });
+        attachAutocomplete('regAddress', (p) => { regDriverLatLng = p; });
+        attachAutocomplete('pRegAddress', (p) => { regPassengerLatLng = p; });
+        attachAutocomplete('pProfileAddress', (p) => { profileLatLng = p; });
+        attachAutocomplete('setDriverAddress', (p) => { driverAddrLatLng = p; });
+    }
+    function attachAutocomplete(inputId, onPlace) {
+        const el = $(inputId);
+        if (!el || !window.google || !google.maps.places) return;
+        try {
+            const ac = new google.maps.places.Autocomplete(el, { fields: ['geometry'], componentRestrictions: { country: 'id' } });
+            ac.addListener('place_changed', () => {
+                const place = ac.getPlace();
+                if (place && place.geometry && place.geometry.location) onPlace({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
+            });
+        } catch (e) { console.warn('Autocomplete tidak tersedia', e); }
+    }
+    // Jika pengguna mengetik manual setelah memilih tempat, koordinat lama dibuang
+    $('pickupLocation').addEventListener('input', () => { pickupLatLng = null; maybeShowRoutePreview(); });
+    $('dropLocation').addEventListener('input', () => { dropLatLng = null; maybeShowRoutePreview(); });
+
+    function useMyLocation() {
+        if (!navigator.geolocation) { toast('Perangkat tidak mendukung lokasi otomatis.'); return; }
+        toast('Mengambil lokasi Anda...');
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const { latitude, longitude } = pos.coords;
+            const here = { lat: latitude, lng: longitude };
+            const fallback = latitude.toFixed(5) + ', ' + longitude.toFixed(5);
+            if (mapsReady && google.maps.Geocoder) {
+                new google.maps.Geocoder().geocode({ location: here }, (results, status) => {
+                    $('pickupLocation').value = (status === 'OK' && results[0]) ? results[0].formatted_address : fallback;
+                    pickupLatLng = here; maybeShowRoutePreview();
+                });
+            } else { $('pickupLocation').value = fallback; pickupLatLng = here; }
+        }, () => toast('Gagal mengambil lokasi. Izinkan akses lokasi pada browser.'), { enableHighAccuracy: true, timeout: 10000 });
+    }
+    function maybeShowRoutePreview() {
+        const box = $('routePreviewMap');
+        if (!mapsReady || !pickupLatLng || !dropLatLng) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        const map = new google.maps.Map(box, { zoom: 13, center: pickupLatLng, disableDefaultUI: true });
+        new google.maps.Marker({ position: pickupLatLng, map, label: 'J' });
+        new google.maps.Marker({ position: dropLatLng, map, label: 'T' });
+        new google.maps.Polyline({ path: [pickupLatLng, dropLatLng], strokeColor: '#6C3CE1', strokeWeight: 4 }).setMap(map);
+        const b = new google.maps.LatLngBounds(); b.extend(pickupLatLng); b.extend(dropLatLng); map.fitBounds(b, 40);
+    }
+
+    // =====================================================================
+    // SIDEBAR / NAVIGASI
+    // =====================================================================
+    async function openSidebar() {
+        $('sidebar').classList.add('show');
+        $('sidebarOverlay').classList.add('show');
+        $('sidePaymentMenu').style.display = currentRole === 'driver' ? 'flex' : 'none';
+        try {
+            if (currentRole === 'driver' && currentDriver) {
+                $('sideName').textContent = currentDriver.name;
+                $('sideRole').textContent = 'Pengemudi' + (currentDriver.plate ? ' · ' + currentDriver.plate : '');
+            } else if (currentRole === 'passenger') {
+                const p = await getMyPassenger();
+                $('sideName').textContent = (p && p.name) || 'Penumpang';
+                $('sideRole').textContent = 'Penumpang';
+            } else { $('sideName').textContent = 'Pengguna'; $('sideRole').textContent = '-'; }
+        } catch (e) { /* abaikan */ }
+    }
+    function closeSidebar() { $('sidebar').classList.remove('show'); $('sidebarOverlay').classList.remove('show'); }
+    $('menuToggle').addEventListener('click', openSidebar);
+
+    function showAbout() {
+        closeSidebar();
+        alert('🛺 BENTORE (Beta) — Transportasi Digital Tidore\n\nBentor memuat hingga 3 penumpang. Tarif ditentukan langsung oleh pengemudi.\nPembayaran: Tunai atau Transfer langsung ke rekening pengemudi.\n\nBENTORE hanya menghubungkan penumpang dan pengemudi; pembayaran terjadi di luar aplikasi.');
+    }
+    async function switchRole() {
+        closeSidebar();
+        if (currentRole === 'driver' && currentDriver && currentDriver.online) { try { await rpc('driver_set_online', { p_online: false }); } catch (e) { /* abaikan */ } }
+        clearTimers();
+        currentRole = null; currentDriver = null; activeOrder = null;
+        localStorage.removeItem(LS_ROLE);
+        $('dashboard').style.display = 'none';
+        $('bottomNav').style.display = 'none';
+        $('roleSelect').style.display = 'block';
+        ['driverView', 'passengerView'].forEach((id) => $(id).style.display = 'none');
+        document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+        resetPassengerUI();
+        updateStatusIndicator();
+        renderAdZone('home_top', 'adZoneHomeTop');
+    }
+    function cancelRegistration(modalId) { closeModal(modalId); switchRole(); }
+
+    function updateStatusIndicator() {
+        let on, text;
+        if (currentRole === 'driver') { on = !!(currentDriver && currentDriver.online && currentDriver.status === 'active'); text = on ? 'Online' : 'Offline'; }
+        else { on = navigator.onLine; text = on ? 'Terhubung' : 'Offline'; }
+        $('statusDot').className = 'status-dot ' + (on ? 'online' : 'offline');
+        $('statusText').textContent = text;
+    }
+
+    function navigateTo(page, el) {
+        closeSidebar();
+        if (page === 'settings' && currentRole !== 'driver') { toast('Menu ini khusus pengemudi'); page = 'home'; el = null; }
+        document.querySelectorAll('.nav-item').forEach((i) => i.classList.remove('active'));
+        const idx = { home: 0, history: 1, profile: 2 }[page];
+        const items = document.querySelectorAll('.nav-item');
+        if (el) el.classList.add('active'); else if (idx !== undefined && items[idx]) items[idx].classList.add('active');
+        document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+        ['driverView', 'passengerView'].forEach((id) => $(id).style.display = 'none');
+
+        if (page === 'home') {
+            $(currentRole === 'driver' ? 'driverView' : 'passengerView').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderAdZone('home_top', 'adZoneHomeTop');
+            onLiveChange();
+        } else if (page === 'history') {
+            $('historyPage').classList.add('active'); renderHistory(); renderAdZone('history_top', 'adZoneHistoryTop');
+        } else if (page === 'profile') {
+            $('profilePage').classList.add('active'); renderProfile();
+        } else if (page === 'settings') {
+            $('settingsPage').classList.add('active'); fillSettingsForm();
+        }
+    }
+
+    // =====================================================================
+    // PERAN
+    // =====================================================================
+    async function setRole(role) {
+        clearTimers();
+        currentRole = role; activeOrder = null; currentDriver = null;
+        localStorage.setItem(LS_ROLE, role);
+        $('roleSelect').style.display = 'none';
+        $('dashboard').style.display = 'block';
+        $('bottomNav').style.display = 'flex';
+        document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach((i, n) => i.classList.toggle('active', n === 0));
+        $('driverView').style.display = role === 'driver' ? 'block' : 'none';
+        $('passengerView').style.display = role === 'passenger' ? 'block' : 'none';
+        resetPassengerUI();
+        try {
+            if (role === 'driver') {
+                currentDriver = await getMyDriver();
+                if (!currentDriver) { openModal('regDriverModal'); updateStatusIndicator(); return; }
+                await startDriverSession();
+            } else {
+                const p = await getMyPassenger();
+                if (!p) openModal('regPassengerModal');
+                await restoreActiveOrder();
+            }
+        } catch (e) { fail(e, 'setRole'); }
+        updateStatusIndicator();
+        renderAdZone('home_top', 'adZoneHomeTop');
+    }
+
+    // =====================================================================
+    // REGISTRASI
+    // =====================================================================
+    function validateProfile(name, contact, address) {
+        if (name.length < 2 || contact.length < 5 || !address) { alert('⚠️ Mohon lengkapi Nama, No. HP/Email, dan Alamat dengan benar.'); return false; }
+        return true;
+    }
+    async function registerDriver() {
+        const name = $('regName').value.trim(), contact = $('regContact').value.trim(), address = $('regAddress').value.trim();
+        if (!validateProfile(name, contact, address)) return;
+        await withBusy($('regDriverBtn'), async () => {
+            try {
+                const loc = regDriverLatLng || {};
+                const { data, error } = await sb.from('drivers').insert({ user_id: userId, name, contact, address, lat: loc.lat ?? null, lng: loc.lng ?? null }).select().single();
+                if (error && error.code !== '23505') throw error;
+                currentDriver = data || await getMyDriver();
+                closeModal('regDriverModal');
+                await startDriverSession();
+                updateStatusIndicator();
+                toast('Selamat datang, ' + name + '! Lengkapi metode pembayaran di menu Pengaturan.');
+            } catch (e) { fail(e, 'registerDriver'); }
+        });
+    }
+    async function registerPassenger() {
+        const name = $('pRegName').value.trim(), contact = $('pRegContact').value.trim(), address = $('pRegAddress').value.trim();
+        if (!validateProfile(name, contact, address)) return;
+        await withBusy($('regPassengerBtn'), async () => {
+            try {
+                const loc = regPassengerLatLng || {};
+                const { error } = await sb.from('passengers').upsert({ user_id: userId, name, contact, address, lat: loc.lat ?? null, lng: loc.lng ?? null }, { onConflict: 'user_id' });
+                if (error) throw error;
+                closeModal('regPassengerModal');
+                toast('Selamat datang, ' + name + '! Silakan pesan bentor Anda.');
+            } catch (e) { fail(e, 'registerPassenger'); }
+        });
+    }
+
+    // =====================================================================
+    // PENGEMUDI
+    // =====================================================================
+    async function startDriverSession() {
+        clearTimers();
+        await refreshDriverOrders();
+        driverTimer = setInterval(refreshDriverOrders, 7000);
+        if (currentDriver.online) startHeartbeat();
+    }
+    function startHeartbeat() {
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(sendHeartbeat, 60000);
+    }
+    async function sendHeartbeat() {
+        if (!currentDriver || !currentDriver.online) return;
+        try { currentDriver = await rpc('driver_set_online', { p_online: true }); applyDriverState(); } catch (e) { console.warn('heartbeat', e); }
+    }
+    function applyDriverState() {
+        const blocked = currentDriver.status === 'blocked';
+        $('driverBlockedBanner').style.display = blocked ? 'flex' : 'none';
+        $('onlineBtn').disabled = blocked;
+        const btn = $('onlineBtn');
+        if (currentDriver.online && !blocked) { btn.innerHTML = '<i class="fas fa-power-off"></i> Berhenti Jalan'; btn.style.background = '#5A2DBF'; }
+        else { btn.innerHTML = '<i class="fas fa-power-off"></i> Mulai Jalan'; btn.style.background = '#6C3CE1'; }
+        $('driverRating').textContent = '⭐ ' + Number(currentDriver.rating || 5).toFixed(1);
+        updateStatusIndicator();
+    }
+    async function toggleOnline() {
+        if (!currentDriver) return;
+        if (currentDriver.status === 'blocked') { toast('Akun dinonaktifkan admin.'); return; }
+        await withBusy($('onlineBtn'), async () => {
+            try {
+                const next = !currentDriver.online;
+                currentDriver = await rpc('driver_set_online', { p_online: next });
+                if (next) startHeartbeat(); else if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+                applyDriverState();
+                toast(next ? 'Anda online. Menunggu order...' : 'Anda offline.');
+            } catch (e) { fail(e, 'toggleOnline'); }
+        });
+    }
+
+    async function refreshDriverOrders() {
+        if (currentRole !== 'driver' || !currentDriver || refreshingDriver) return;
+        refreshingDriver = true;
+        try {
+            sb.rpc('expire_stale_orders').then(() => {}, () => {});
+            const [d, o, done] = await Promise.all([
+                getMyDriver(),
+                sb.from('orders').select('*').eq('driver_user_id', userId).in('status', ACTIVE_STATUSES).order('created_at'),
+                sb.from('orders').select('fare').eq('driver_user_id', userId).eq('status', 'completed').gte('updated_at', startOfTodayISO())
+            ]);
+            if (o.error) throw o.error;
+            if (d) { currentDriver = d; applyDriverState(); }
+            const orders = o.data || [];
+            const todayDone = done.data || [];
+            $('todayOrders').textContent = todayDone.length;
+            $('todayIncome').textContent = formatRupiah(todayDone.reduce((s, x) => s + (x.fare || 0), 0));
+
+            const waiting = orders.filter((x) => x.status === 'waiting_fare');
+            // setHtml hanya menulis ulang jika HTML berubah -> input tarif yang sedang diketik tidak terhapus
+            setHtml($('waitingOrdersContainer'), waiting.length === 0 ? '<p class="empty-state">Belum ada order masuk</p>' : waiting.map((x) => `
+                <div class="order-item">
+                    <div class="order-info">
+                        <div class="location">📍 ${esc(x.pickup)}</div>
+                        <div class="location">🏁 ${esc(x.drop_off)}</div>
+                        <div class="detail">👤 ${esc(x.passenger_name)} (${esc(x.passenger_contact)}) · ${x.service_type === 'cargo' ? '📦 Barang' : '👥 ' + x.passenger_count + ' penumpang'}${x.trip_km ? ' · 📏 ± ' + x.trip_km + ' km (garis lurus)' : ''} · 💳 ${x.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</div>
+                    </div>
+                    <div class="fare-input-row">
+                        <input type="number" inputmode="numeric" placeholder="Tarif (Rp)" id="fareInput_${esc(x.id)}" min="1000" max="10000000" step="500">
+                        <button data-act="accept" data-id="${esc(x.id)}">Terima</button>
+                        <button class="btn-reject" data-act="reject" data-id="${esc(x.id)}">Tolak</button>
+                    </div>
+                </div>`).join(''));
+
+            const html = orders.filter((x) => x.status !== 'waiting_fare').map((x) => {
+                const info = `<div class="order-info">
+                    <div class="location">📍 ${esc(x.pickup)} → 🏁 ${esc(x.drop_off)}</div>
+                    <div class="detail">👤 ${esc(x.passenger_name)} (${esc(x.passenger_contact)}) · ${x.service_type === 'cargo' ? '📦 Barang' : '👥 ' + x.passenger_count + ' penumpang'} · 💰 ${formatRupiah(x.fare)} · ${x.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</div>
+                    ${x.status === 'waiting_confirmation' ? '<div class="detail"><span class="waiting-pulse"></span>Menunggu konfirmasi penumpang...</div>' : ''}
+                </div>`;
+                const actions = x.status === 'ongoing'
+                    ? `<button class="btn-danger" data-act="cancel" data-id="${esc(x.id)}">Batalkan</button>
+                       <button class="btn-primary" data-act="arrive" data-id="${esc(x.id)}">Sampai Tujuan</button>`
+                    : `<button class="btn-danger" data-act="cancel" data-id="${esc(x.id)}">Batalkan</button>
+                       <button class="btn-outline" data-act="force" data-id="${esc(x.id)}">Selesai (Paksa)</button>`;
+                return `<div class="order-item">${info}<div class="ongoing-actions">${actions}</div></div>`;
+            }).join('');
+            setHtml($('ongoingOrdersContainer'), html || '<p class="empty-state">Tidak ada order berjalan</p>');
+        } catch (e) { console.warn('refreshDriverOrders', e); }
+        finally { refreshingDriver = false; }
+    }
+
+    // Delegasi klik tombol order pengemudi
+    document.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]');
+        if (!b || !b.dataset.id) return;
+        const id = b.dataset.id, act = b.dataset.act;
+        try {
+            if (act === 'accept') {
+                const fare = Math.round(Number($('fareInput_' + id).value));
+                if (!fare || fare <= 0) { alert('⚠️ Masukkan tarif perjalanan terlebih dahulu.'); return; }
+                if (fare < 1000 && !confirm('Tarif ' + formatRupiah(fare) + ' sangat kecil. Lanjutkan?')) return;
+                b.disabled = true;
+                await rpc('driver_accept_order', { p_order_id: id, p_fare: fare });
+                toast('Order diterima dengan tarif ' + formatRupiah(fare));
+            } else if (act === 'reject') {
+                if (!confirm('Tolak order ini? Penumpang akan diminta mencari pengemudi lain.')) return;
+                b.disabled = true; await rpc('driver_reject_order', { p_order_id: id }); toast('Order ditolak.');
+            } else if (act === 'arrive') {
+                b.disabled = true; await rpc('driver_request_completion', { p_order_id: id }); toast('Menunggu penumpang mengonfirmasi perjalanan selesai...');
+            } else if (act === 'cancel') {
+                if (!confirm('Batalkan order ini?')) return;
+                b.disabled = true; await rpc('driver_cancel_order', { p_order_id: id }); toast('Order dibatalkan.');
+            } else if (act === 'force') {
+                if (!confirm('Tandai selesai tanpa konfirmasi penumpang? Hanya bisa jika penumpang tidak merespons ≥ 5 menit.')) return;
+                b.disabled = true; await rpc('driver_force_complete', { p_order_id: id }); toast('Perjalanan ditandai selesai.');
+            }
+        } catch (err) { fail(err, act); }
+        refreshDriverOrders();
+    });
+
+    // Pengaturan pengemudi
+    function fillSettingsForm() {
+        if (!currentDriver) return;
+        $('setDriverName').value = currentDriver.name;
+        $('setDriverContact').value = currentDriver.contact;
+        $('setDriverAddress').value = currentDriver.address || '';
+        $('setDriverPlate').value = currentDriver.plate || '';
+        $('payCash').checked = !!currentDriver.pay_cash;
+        $('payTransfer').checked = !!currentDriver.pay_transfer;
+        const known = ['Bank Maluku Utara', 'BRI', 'BNI', 'BCA', 'Mandiri', 'BSI'];
+        if (currentDriver.bank_name && !known.includes(currentDriver.bank_name)) { $('bankName').value = 'Lainnya'; $('bankNameOther').value = currentDriver.bank_name; }
+        else $('bankName').value = currentDriver.bank_name || 'Bank Maluku Utara';
+        $('bankAccount').value = currentDriver.bank_account || '';
+        $('bankHolder').value = currentDriver.bank_holder || '';
+        onPayToggleChange(); onBankSelectChange();
+    }
+    function onPayToggleChange() { $('bankFields').classList.toggle('show', $('payTransfer').checked); }
+    function onBankSelectChange() { $('bankNameOtherGroup').style.display = $('bankName').value === 'Lainnya' ? 'block' : 'none'; }
+    async function saveDriverSettings() {
+        const name = $('setDriverName').value.trim(), contact = $('setDriverContact').value.trim(), address = $('setDriverAddress').value.trim(), plate = $('setDriverPlate').value.trim();
+        const payCash = $('payCash').checked, payTransfer = $('payTransfer').checked;
+        if (!validateProfile(name, contact, address)) return;
+        if (!payCash && !payTransfer) { alert('⚠️ Aktifkan minimal satu metode pembayaran (Tunai atau Transfer).'); return; }
+        let bankName = '', bankAccount = '', bankHolder = '';
+        if (payTransfer) {
+            bankName = $('bankName').value === 'Lainnya' ? $('bankNameOther').value.trim() : $('bankName').value;
+            bankAccount = $('bankAccount').value.replace(/[\s-]/g, '');
+            bankHolder = $('bankHolder').value.trim();
+            if (!bankName || !bankHolder) { alert('⚠️ Lengkapi data rekening bank.'); return; }
+            if (!/^\d{5,25}$/.test(bankAccount)) { alert('⚠️ Nomor rekening harus berupa angka (5–25 digit).'); return; }
+        }
+        await withBusy($('saveSettingsBtn'), async () => {
+            try {
+                const loc = driverAddrLatLng || { lat: currentDriver.lat, lng: currentDriver.lng };
+                const { data, error } = await sb.from('drivers').update({
+                    name, contact, address, plate, pay_cash: payCash, pay_transfer: payTransfer,
+                    bank_name: bankName, bank_account: bankAccount, bank_holder: bankHolder, lat: loc.lat ?? null, lng: loc.lng ?? null
+                }).eq('id', currentDriver.id).select().single();
+                if (error) throw error;
+                currentDriver = data; driverAddrLatLng = null;
+                toast('✅ Pengaturan disimpan');
+                navigateTo('home');
+            } catch (e) { fail(e, 'saveDriverSettings'); }
+        });
+    }
+
+    // =====================================================================
+    // PENUMPANG: CARI & PESAN
+    // =====================================================================
+    function resetPassengerUI() {
+        $('bookingForm').style.display = 'block';
+        $('activeOrder').style.display = 'none';
+        $('nearbyBentors').style.display = 'none';
+        $('adZoneSearchResults').style.display = 'none';
+    }
+
+    async function findBentor() {
+        const pickup = $('pickupLocation').value.trim(), drop = $('dropLocation').value.trim();
+        if (!pickup || !drop) { alert('⚠️ Mohon isi lokasi jemput dan tujuan!'); return; }
+        if (activeOrder) { toast('Selesaikan dulu order yang sedang aktif.'); return; }
+        const btn = $('findBtn');
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
+        btn.disabled = true;
+        try {
+            const { data, error } = await sb.from('drivers_public').select('*').order('rating', { ascending: false }).limit(30);
+            if (error) throw error;
+            driversCache = {};
+            const list = $('bentorList');
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p class="empty-state">Tidak ada bentor online saat ini. Coba lagi sebentar lagi.</p>';
+            } else {
+                list.innerHTML = data.map((d) => {
+                    driversCache[d.id] = d;
+                    const badges = (d.pay_cash ? '<span class="badge badge-cash"><i class="fas fa-money-bill"></i> Tunai</span>' : '') +
+                        (d.pay_transfer ? '<span class="badge badge-transfer"><i class="fas fa-building-columns"></i> Transfer</span>' : '');
+                    return `<div class="bentor-item">
+                        <div class="bentor-info">
+                            <div class="name">🛺 ${esc(d.name)}</div>
+                            <div class="distance">⭐ ${Number(d.rating).toFixed(1)} · ${d.total_orders || 0} perjalanan${d.plate ? ' · ' + esc(d.plate) : ''}</div>
+                            <div class="pay-badges">${badges}</div>
+                        </div>
+                        <button class="book-btn" data-book="${esc(d.id)}">Pesan</button>
+                    </div>`;
+                }).join('');
+            }
+            $('nearbyBentors').style.display = 'block';
+            renderAdZone('search_results', 'adZoneSearchResults');
+        } catch (e) { fail(e, 'findBentor'); }
+        finally { btn.innerHTML = original; btn.disabled = false; }
+    }
+    document.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-book]');
+        if (b) bookBentor(b.dataset.book);
+    });
+
+    async function bookBentor(driverId) {
+        const driver = driversCache[driverId];
+        if (!driver) { toast('Pengemudi tidak ditemukan. Cari ulang.'); return; }
+        try {
+            const p = await getMyPassenger();
+            if (!p) { openModal('regPassengerModal'); return; }
+        } catch (e) { fail(e); return; }
+        pendingBooking = { driver };
+        selectedPaymentMethod = driver.pay_cash ? 'cash' : 'transfer';
+        const opts = [];
+        if (driver.pay_cash) opts.push(`<div class="pay-option ${selectedPaymentMethod === 'cash' ? 'selected' : ''}" data-method="cash" onclick="selectPaymentOption('cash')"><i class="fas fa-money-bill-wave"></i><div><div class="pt-title">Tunai (Cash)</div><div class="pt-sub">Bayar langsung ke pengemudi saat tiba</div></div></div>`);
+        if (driver.pay_transfer) opts.push(`<div class="pay-option ${selectedPaymentMethod === 'transfer' ? 'selected' : ''}" data-method="transfer" onclick="selectPaymentOption('transfer')"><i class="fas fa-building-columns"></i><div><div class="pt-title">Transfer Bank</div><div class="pt-sub">Rekening pengemudi ditampilkan setelah order diterima</div></div></div>`);
+        $('paymentOptions').innerHTML = opts.join('');
+        $('paymentBankPreview').innerHTML = '';
+        openModal('paymentModal');
+    }
+    function selectPaymentOption(method) {
+        selectedPaymentMethod = method;
+        document.querySelectorAll('.pay-option').forEach((el) => el.classList.toggle('selected', el.dataset.method === method));
+    }
+
+    async function confirmBooking() {
+        if (!pendingBooking) return;
+        const { driver } = pendingBooking;
+        const pickup = $('pickupLocation').value.trim(), drop = $('dropLocation').value.trim();
+        if (!pickup || !drop) { closeModal('paymentModal'); alert('⚠️ Mohon isi lokasi jemput dan tujuan!'); return; }
+        await withBusy($('confirmBookingBtn'), async () => {
+            try {
+                const km = haversineKm(pickupLatLng, dropLatLng);
+                const order = await rpc('create_order', {
+                    p_driver_id: driver.id, p_pickup: pickup, p_drop: drop,
+                    p_pickup_lat: pickupLatLng ? pickupLatLng.lat : null, p_pickup_lng: pickupLatLng ? pickupLatLng.lng : null,
+                    p_drop_lat: dropLatLng ? dropLatLng.lat : null, p_drop_lng: dropLatLng ? dropLatLng.lng : null,
+                    p_passenger_count: Number($('passengerCount').value), p_service_type: $('serviceType').value,
+                    p_payment_method: selectedPaymentMethod, p_trip_km: km
+                });
+                activeOrder = order;
+                pendingBooking = null;
+                closeModal('paymentModal');
+                showActivePanel();
+                startPassengerPoll();
+            } catch (e) {
+                fail(e, 'confirmBooking');
+                if (String(e.message).includes('driver_unavailable')) { closeModal('paymentModal'); findBentor(); }
+            }
+        });
+    }
+
+    function showActivePanel() {
+        $('bookingForm').style.display = 'none';
+        $('nearbyBentors').style.display = 'none';
+        $('adZoneSearchResults').style.display = 'none';
+        $('activeOrder').style.display = 'block';
+        renderActiveOrder();
+    }
+    function startPassengerPoll() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollOrderStatus, 6000);
+    }
+    async function restoreActiveOrder() {
+        const { data, error } = await sb.from('orders').select('*').eq('passenger_user_id', userId).in('status', ACTIVE_STATUSES).order('created_at', { ascending: false }).limit(1);
+        if (error) throw error;
+        if (data && data.length) { activeOrder = data[0]; showActivePanel(); startPassengerPoll(); }
+    }
+    async function pollOrderStatus() {
+        if (!activeOrder || currentRole !== 'passenger') return;
+        try {
+            const { data, error } = await sb.from('orders').select('*').eq('id', activeOrder.id).maybeSingle();
+            if (error) throw error;
+            if (!data) return;
+            activeOrder = data;
+            renderActiveOrder();
+        } catch (e) { console.warn('pollOrderStatus', e); }
+    }
+
+    function renderActiveOrder() {
+        const o = activeOrder; if (!o) return;
+        const show = (id, v) => { $(id).style.display = v ? 'block' : 'none'; };
+        $('driverName').textContent = 'Driver: ' + o.driver_name;
+        $('driverPhone').textContent = 'Kontak: ' + o.driver_contact;
+        $('activeRoute').innerHTML = '📍 ' + esc(o.pickup) + ' → 🏁 ' + esc(o.drop_off);
+        let icon = '⏳', title = 'Menunggu Pengemudi Menentukan Tarif';
+        let fare = false, bank = false, cancel = false, confirmDone = false, ok = false, again = false;
+
+        switch (o.status) {
+            case 'waiting_fare': cancel = true; break;
+            case 'ongoing': icon = '🛺'; title = 'Pengemudi Menuju Lokasi Anda'; fare = true; bank = true; cancel = true; break;
+            case 'waiting_confirmation': icon = '🏁'; title = 'Pengemudi Menyatakan Perjalanan Selesai'; fare = true; bank = true; confirmDone = true; break;
+            case 'completed': icon = '✅'; title = 'Perjalanan Selesai'; fare = true; ok = true; break;
+            case 'rejected': icon = '🚫'; title = 'Pengemudi Menolak Order'; again = true; break;
+            case 'cancelled':
+                icon = '🚫';
+                title = o.cancelled_by === 'system' ? 'Order Kedaluwarsa (Pengemudi Tidak Merespons)' : 'Order Dibatalkan Pengemudi';
+                again = true; break;
+        }
+        $('activeStatusIcon').textContent = icon;
+        $('orderStatusTitle').innerHTML = (o.status === 'waiting_fare' ? '<span class="waiting-pulse"></span>' : '') + esc(title);
+
+        if (fare && o.fare) {
+            setHtml($('activeFareBox'), `<div class="fare-row"><span>${o.service_type === 'cargo' ? 'Layanan' : 'Jumlah Penumpang'}</span><span>${o.service_type === 'cargo' ? '📦 Barang' : o.passenger_count + ' orang'}</span></div>
+                <div class="fare-row total"><span>Total Tarif</span><span>${formatRupiah(o.fare)}</span></div>`);
+        }
+        show('activeFareBox', fare && !!o.fare);
+        if (bank && o.payment_method === 'transfer' && o.bank_account) {
+            setHtml($('activeBankBox'), `
+                <div class="row"><span class="label">Bank</span><span class="value">${esc(o.bank_name)}</span></div>
+                <div class="row"><span class="label">No. Rekening</span><span class="value">${esc(o.bank_account)}</span><button class="copy-btn" data-copy="${esc(o.bank_account)}">Salin</button></div>
+                <div class="row"><span class="label">Atas Nama</span><span class="value">${esc(o.bank_holder)}</span></div>`);
+            show('activeBankBox', true);
+        } else show('activeBankBox', false);
+
+        show('cancelOrderBtn', cancel); show('confirmDoneBtn', confirmDone); show('okOrderBtn', ok); show('searchAgainBtn', again);
+
+        if (['completed', 'rejected', 'cancelled'].includes(o.status) && pollTimer) {
+            clearInterval(pollTimer); pollTimer = null;
+            if (o.status === 'completed') toast('Perjalanan selesai. Terima kasih sudah naik BENTORE!');
+        }
+    }
+
+    async function passengerConfirmCompletion() {
+        if (!activeOrder) return;
+        if (!confirm('Konfirmasi perjalanan sudah selesai dan pembayaran sudah dilakukan?')) return;
+        await withBusy($('confirmDoneBtn'), async () => {
+            try { activeOrder = await rpc('passenger_confirm_completion', { p_order_id: activeOrder.id }); renderActiveOrder(); }
+            catch (e) { fail(e, 'confirm'); pollOrderStatus(); }
+        });
+    }
+    async function cancelOrder() {
+        if (!activeOrder || !confirm('Batalkan order?')) return;
+        await withBusy($('cancelOrderBtn'), async () => {
+            try {
+                await rpc('passenger_cancel_order', { p_order_id: activeOrder.id });
+                if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                activeOrder = null; resetPassengerUI(); toast('Order dibatalkan.');
+            } catch (e) { fail(e, 'cancel'); pollOrderStatus(); }
+        });
+    }
+    function backToSearch() {
+        activeOrder = null; resetPassengerUI(); findBentor();
+    }
+    function acknowledgeCompleted() {
+        activeOrder = null;
+        $('pickupLocation').value = ''; $('dropLocation').value = '';
+        pickupLatLng = null; dropLatLng = null;
+        $('routePreviewMap').style.display = 'none';
+        resetPassengerUI();
+    }
+
+    // =====================================================================
+    // RIWAYAT & PROFIL
+    // =====================================================================
+    async function renderHistory() {
+        const box = $('historyList');
+        box.innerHTML = '<p class="empty-state">Memuat...</p>';
+        try {
+            const col = currentRole === 'driver' ? 'driver_user_id' : 'passenger_user_id';
+            const { data, error } = await sb.from('orders').select('*').eq(col, userId).order('created_at', { ascending: false }).limit(100);
+            if (error) throw error;
+            if (!data.length) { box.innerHTML = '<p class="empty-state">Belum ada riwayat perjalanan</p>'; return; }
+            box.innerHTML = data.map((o) => `
+                <div class="list-card">
+                    <div class="top-row">
+                        <span class="status-tag status-${esc(o.status)}">${esc(STATUS_LABEL[o.status] || o.status)}</span>
+                        <span class="fare-tag">${o.fare ? formatRupiah(o.fare) : '-'}</span>
+                    </div>
+                    <div class="route">📍 ${esc(o.pickup)} → 🏁 ${esc(o.drop_off)}</div>
+                    <div class="meta">${currentRole === 'driver' ? '👤 ' + esc(o.passenger_name) : '🛺 ' + esc(o.driver_name)} · ${o.service_type === 'cargo' ? '📦' : '👥 ' + o.passenger_count} · ${o.payment_method === 'cash' ? 'Tunai' : 'Transfer'} · ${new Date(o.created_at).toLocaleString('id-ID')}</div>
+                </div>`).join('');
+        } catch (e) { box.innerHTML = '<p class="empty-state">Gagal memuat riwayat.</p>'; console.error(e); }
+    }
+    async function renderProfile() {
+        try {
+            if (currentRole === 'driver' && currentDriver) {
+                $('profileName').textContent = currentDriver.name;
+                $('profilePhone').textContent = currentDriver.contact;
+                $('passengerProfileForm').style.display = 'none';
+                $('driverProfileSummary').style.display = 'block';
+                $('dProfilePlate').textContent = currentDriver.plate || '-';
+                $('dProfileAddress').textContent = currentDriver.address || '-';
+                $('dProfileRating').textContent = '⭐ ' + Number(currentDriver.rating || 5).toFixed(1);
+                $('dProfileOrders').textContent = currentDriver.total_orders || 0;
+            } else {
+                const p = (await getMyPassenger()) || {};
+                $('profileName').textContent = p.name || 'Penumpang';
+                $('profilePhone').textContent = p.contact || 'Belum ada kontak';
+                $('passengerProfileForm').style.display = 'block';
+                $('driverProfileSummary').style.display = 'none';
+                $('pProfileName').value = p.name || ''; $('pProfileContact').value = p.contact || ''; $('pProfileAddress').value = p.address || '';
+            }
+        } catch (e) { fail(e, 'renderProfile'); }
+    }
+    async function savePassengerProfile() {
+        const name = $('pProfileName').value.trim(), contact = $('pProfileContact').value.trim(), address = $('pProfileAddress').value.trim();
+        if (!validateProfile(name, contact, address)) return;
+        try {
+            const old = (await getMyPassenger()) || {};
+            const loc = profileLatLng || { lat: old.lat, lng: old.lng };
+            const { error } = await sb.from('passengers').upsert({ user_id: userId, name, contact, address, lat: loc.lat ?? null, lng: loc.lng ?? null }, { onConflict: 'user_id' });
+            if (error) throw error;
+            profileLatLng = null;
+            renderProfile(); toast('✅ Profil disimpan');
+        } catch (e) { fail(e, 'savePassengerProfile'); }
+    }
+
+    // =====================================================================
+    // IKLAN
+    // =====================================================================
+    async function renderAdZone(zoneKey, elementId) {
+        const el = $(elementId);
+        if (!el || !sb) return;
+        try {
+            const ads = await loadAds();
+            const d = new Date();
+            const today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            const ad = ads.find((a) => a.zone_key === zoneKey && a.image_url && safeUrl(a.image_url) && (!a.start_date || a.start_date <= today) && (!a.end_date || a.end_date >= today));
+            if (!ad) { el.style.display = 'none'; el.innerHTML = ''; el.onclick = null; return; }
+            el.style.display = 'block';
+            el.innerHTML = `<img src="${esc(ad.image_url)}" alt="${esc(ad.advertiser_name || 'Iklan')}" loading="lazy"><span class="ad-tag">Iklan</span><div class="ad-caption">${esc(ad.advertiser_name || 'Sponsor')}</div>`;
+            const link = safeUrl(ad.link_url);
+            el.onclick = link ? () => window.open(link, '_blank', 'noopener') : null;
+        } catch (e) { el.style.display = 'none'; }
+    }
+
+    // Ekspos fungsi yang dipanggil dari atribut onclick di HTML
+    Object.assign(window, {
+        setRole, switchRole, cancelRegistration, closeSidebar, navigateTo, showAbout, toggleOnline, findBentor, useMyLocation,
+        selectPaymentOption, confirmBooking, closeModal, cancelOrder, passengerConfirmCompletion, acknowledgeCompleted, backToSearch,
+        registerDriver, registerPassenger, savePassengerProfile, saveDriverSettings, onPayToggleChange, onBankSelectChange
+    });
+})();
+</script>
+</body>
+</html>

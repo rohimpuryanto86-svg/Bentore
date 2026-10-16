@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>BENTORE Admin - Panel Pengelola</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+        --primary: #6C3CE1; --primary-dark: #5A2DBF; --bg-light: #F0EDFF; --dark: #1A1A2E; --white: #FFFFFF;
+        --gray: #8888AA; --green: #2FB380; --red: #FF4444; --amber: #E39B00;
+        --shadow: 0 4px 12px rgba(108, 60, 225, 0.15); --radius: 14px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-light); color: var(--dark); min-height: 100vh; }
+    #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(160deg, var(--primary), var(--primary-dark)); }
+    .login-box { background: var(--white); padding: 36px 28px; border-radius: 20px; width: 100%; max-width: 380px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); text-align: center; }
+    .login-box .logo { font-size: 52px; margin-bottom: 8px; }
+    .login-box h1 { font-size: 22px; margin-bottom: 4px; }
+    .login-box p { color: var(--gray); font-size: 13px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .form-input { width: 100%; padding: 12px 14px; border: 2px solid #E8E0F0; border-radius: 10px; font-size: 15px; background: var(--white); color: var(--dark); }
+    .form-input:focus { border-color: var(--primary); outline: none; }
+    .btn-primary { background: var(--primary); color: var(--white); border: none; padding: 13px 20px; border-radius: 10px; font-size: 15px; font-weight: 600; width: 100%; cursor: pointer; }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-outline { background: var(--white); color: var(--primary); border: 2px solid var(--primary); padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-small { border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .login-error { color: var(--red); font-size: 13px; margin-top: 10px; display: none; }
+
+    #adminApp { display: none; min-height: 100vh; }
+    header { background: var(--primary); color: var(--white); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow); }
+    header .title { font-weight: 700; font-size: 18px; }
+    header .right { display: flex; gap: 8px; align-items: center; }
+    header button { background: rgba(255,255,255,0.15); border: none; color: var(--white); padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .tabs { display: flex; overflow-x: auto; background: var(--white); position: sticky; top: 57px; z-index: 40; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .tab { padding: 14px 16px; font-size: 13px; font-weight: 600; color: var(--gray); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--white); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
+    .stat-card .label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
+    .stat-card .value { font-size: 22px; font-weight: 700; color: var(--primary); }
+    .stat-card .value.green { color: var(--green); }
+    .stat-card .value.amber { color: var(--amber); }
+    .panel { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+    .panel h3 { font-size: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .panel h3 i { color: var(--primary); margin-right: 6px; }
+    .panel .sub { font-size: 12.5px; color: var(--gray); margin: -8px 0 14px; }
+    .search-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-row input, .search-row select { flex: 1; min-width: 160px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--gray); font-size: 11px; text-transform: uppercase; padding: 8px 10px; border-bottom: 2px solid var(--bg-light); }
+    td { padding: 10px; border-bottom: 1px solid #F2EFFB; vertical-align: top; word-break: break-word; }
+    tr:last-child td { border-bottom: none; }
+    .table-wrap { overflow-x: auto; }
+    .badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .badge-cash, .badge-active, .badge-completed { background: #E7F7EF; color: var(--green); }
+    .badge-transfer { background: #EDE7FB; color: var(--primary); }
+    .badge-blocked, .badge-cancelled, .badge-rejected { background: #FDEAEA; color: var(--red); }
+    .badge-ongoing { background: #FFF4E0; color: var(--amber); }
+    .badge-waiting_fare { background: #EAF2FF; color: #2F6FB3; }
+    .badge-waiting_confirmation { background: #FFF0DA; color: #B36B00; }
+    .action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .empty-state { text-align: center; color: var(--gray); padding: 40px 0; font-size: 14px; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 560px) { .settings-grid { grid-template-columns: 1fr; } }
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--dark); color: var(--white); padding: 12px 20px; border-radius: 30px; font-size: 14px; z-index: 400; opacity: 0; transition: 0.25s; pointer-events: none; max-width: 90%; text-align: center; }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .ad-zone-card { border: 2px solid #F0EDFF; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .ad-zone-card .zone-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .ad-zone-card .zone-head h4 { font-size: 14px; }
+    .ad-zone-card .zone-key { font-size: 11px; color: var(--gray); }
+    .ad-preview { width: 100%; max-height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; display: none; background: var(--bg-light); }
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle { position: absolute; cursor: pointer; inset: 0; background-color: #D9D3EE; transition: .2s; border-radius: 26px; }
+    .slider-toggle:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+    .switch input:checked + .slider-toggle { background-color: var(--primary); }
+    .switch input:checked + .slider-toggle:before { transform: translateX(20px); }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+    <div class="login-box">
+        <div class="logo">🛺🔐</div>
+        <h1>BENTORE Admin</h1>
+        <p>Masuk dengan akun admin Supabase Anda</p>
+        <div class="form-group"><label for="adminEmail">Email</label><input type="email" id="adminEmail" class="form-input" autocomplete="username" placeholder="admin@contoh.com"></div>
+        <div class="form-group"><label for="adminPassword">Kata Sandi</label><input type="password" id="adminPassword" class="form-input" autocomplete="current-password" placeholder="Kata sandi" onkeydown="if(event.key==='Enter') doLogin()"></div>
+        <button class="btn-primary" id="loginBtn" onclick="doLogin()"><i class="fas fa-right-to-bracket"></i> Masuk</button>
+        <p class="login-error" id="loginError"></p>
+    </div>
+</div>
+
+<div id="adminApp">
+    <header>
+        <div class="title">💜 BENTORE <span style="opacity:.8; font-weight:400;">· Admin</span></div>
+        <div class="right">
+            <button onclick="refreshCurrent(true)" title="Muat ulang data"><i class="fas fa-rotate"></i></button>
+            <button onclick="doLogout()"><i class="fas fa-right-from-bracket"></i> Keluar</button>
+        </div>
+    </header>
+    <div class="tabs">
+        <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')"><i class="fas fa-gauge"></i> Dashboard</div>
+        <div class="tab" data-tab="drivers" onclick="switchTab('drivers')"><i class="fas fa-motorcycle"></i> Pengemudi</div>
+        <div class="tab" data-tab="orders" onclick="switchTab('orders')"><i class="fas fa-receipt"></i> Order</div>
+        <div class="tab" data-tab="ads" onclick="switchTab('ads')"><i class="fas fa-rectangle-ad"></i> Iklan</div>
+        <div class="tab" data-tab="settings" onclick="switchTab('settings')"><i class="fas fa-sliders"></i> Pengaturan</div>
+    </div>
+
+    <div class="container">
+        <div class="tab-page active" id="page-dashboard">
+            <div class="stat-grid">
+                <div class="stat-card"><div class="label">Total Pengemudi</div><div class="value" id="statTotalDrivers">0</div></div>
+                <div class="stat-card"><div class="label">Pengemudi Online</div><div class="value green" id="statOnlineDrivers">0</div></div>
+                <div class="stat-card"><div class="label">Total Order</div><div class="value" id="statTotalOrders">0</div></div>
+                <div class="stat-card"><div class="label">Order Hari Ini</div><div class="value amber" id="statTodayOrders">0</div></div>
+                <div class="stat-card"><div class="label">Nilai Transaksi Selesai</div><div class="value green" id="statTotalRevenue">Rp0</div></div>
+            </div>
+            <div class="panel">
+                <h3><span><i class="fas fa-clock-rotate-left"></i> Order Terbaru</span></h3>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Waktu</th><th>Penumpang</th><th>Pengemudi</th><th>Rute</th><th>Jml</th><th>Tarif</th><th>Bayar</th><th>Status</th></tr></thead>
+                    <tbody id="recentOrdersBody"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <div class="tab-page" id="page-drivers">
+            <div class="panel">
+                <h3><span><i class="fas fa-motorcycle"></i> Kelola Pengemudi</span></h3>
+                <div class="search-row">
+                    <input type="text" id="driverSearch" class="form-input" placeholder="Cari nama / kontak / alamat..." oninput="renderDrivers()">
+                    <select id="driverFilter" class="form-input" onchange="renderDrivers()">
+                        <option value="all">Semua Status</option><option value="active">Aktif</option><option value="blocked">Dinonaktifkan</option>
+                    </select>
+                </div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Pengemudi</th><th>Kontak &amp; Alamat</th><th>Bayar</th><th>Rekening</th><th>Rating</th><th>Order</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="driversBody"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <div class="tab-page" id="page-orders">
+            <div class="panel">
+                <h3><span><i class="fas fa-receipt"></i> Semua Order</span><button class="btn-outline" onclick="exportOrdersCsv()"><i class="fas fa-file-csv"></i> Ekspor CSV</button></h3>
+                <div class="search-row">
+                    <input type="text" id="orderSearch" class="form-input" placeholder="Cari penumpang / pengemudi..." oninput="renderOrders()">
+                    <select id="orderFilter" class="form-input" onchange="renderOrders()">
+                        <option value="all">Semua Status</option>
+                        <option value="waiting_fare">Menunggu Tarif</option><option value="ongoing">Berlangsung</option>
+                        <option value="waiting_confirmation">Menunggu Konfirmasi</option><option value="completed">Selesai</option>
+                        <option value="rejected">Ditolak Pengemudi</option><option value="cancelled">Dibatalkan</option>
+                    </select>
+                </div>
+                <p class="sub" style="margin-top:-6px;">Menampilkan maksimal 500 order terbaru.</p>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Waktu</th><th>Penumpang</th><th>Pengemudi</th><th>Rute</th><th>Jml</th><th>Tarif</th><th>Bayar</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="ordersBody"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <div class="tab-page" id="page-ads">
+            <div class="panel">
+                <h3><span><i class="fas fa-rectangle-ad"></i> Kelola Zona Iklan</span></h3>
+                <p class="sub">Setiap zona menampilkan satu iklan aktif (gambar + link WhatsApp/website). URL harus diawali http:// atau https://.</p>
+                <div id="adZonesContainer"></div>
+            </div>
+        </div>
+
+        <div class="tab-page" id="page-settings">
+            <div class="panel">
+                <h3><span><i class="fas fa-map-location-dot"></i> Integrasi Google Maps</span></h3>
+                <p class="sub">Isi Google Maps API Key agar pencarian alamat &amp; peta aktif di app. Aktifkan Maps JavaScript API &amp; Places API, dan batasi key dengan HTTP referrer (domain situs Anda).</p>
+                <div class="form-group"><label>Google Maps API Key</label><input type="text" id="setMapsKey" class="form-input" placeholder="AIzaSy..."></div>
+                <button class="btn-primary" onclick="saveMapsKey()"><i class="fas fa-save"></i> Simpan API Key</button>
+            </div>
+            <div class="panel">
+                <h3><span><i class="fas fa-lock"></i> Ubah Kata Sandi Admin</span></h3>
+                <div class="settings-grid">
+                    <div class="form-group"><label>Kata Sandi Baru</label><input type="password" id="newAdminPass" class="form-input" autocomplete="new-password" placeholder="Minimal 8 karakter"></div>
+                    <div class="form-group"><label>Ulangi Kata Sandi</label><input type="password" id="newAdminPass2" class="form-input" autocomplete="new-password" placeholder="Ulangi kata sandi"></div>
+                </div>
+                <button class="btn-primary" onclick="saveAdminPassword()"><i class="fas fa-key"></i> Simpan Kata Sandi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(() => {
+    'use strict';
+    const CFG = window.BENTORE_CONFIG || {};
+    const CONFIGURED = !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && !/YOUR-/.test(CFG.SUPABASE_URL + CFG.SUPABASE_ANON_KEY));
+    const AD_ZONES = [
+        { key: 'home_top', label: 'Beranda - Atas', desc: 'Tampil di layar utama penumpang & pengemudi' },
+        { key: 'search_results', label: 'Hasil Pencarian Bentor', desc: 'Tampil setelah penumpang mencari bentor' },
+        { key: 'history_top', label: 'Riwayat - Atas', desc: 'Tampil di bagian atas halaman Riwayat' }
+    ];
+    const STATUS = { completed: 'Selesai', ongoing: 'Berlangsung', waiting_fare: 'Menunggu Tarif', waiting_confirmation: 'Menunggu Konfirmasi', cancelled: 'Dibatalkan', rejected: 'Ditolak Pengemudi' };
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const rupiah = (n) => n ? 'Rp' + Number(n).toLocaleString('id-ID') : '-';
+    const isUrl = (u) => !u || /^https?:\/\//i.test(u);
+    let sb = null, currentTab = 'dashboard', ordersCache = [], driversCache = [], autoTimer = null;
+
+    function toast(msg) {
+        const t = $('toast'); t.textContent = msg; t.classList.add('show');
+        clearTimeout(window._t); window._t = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    function fail(e) { console.error(e); toast('Gagal: ' + ((e && e.message) || 'kesalahan tidak diketahui')); }
+    function showLoginError(msg) { const el = $('loginError'); el.textContent = msg; el.style.display = 'block'; }
+
+    // Sesi admin dipisah dari sesi aplikasi utama (storageKey berbeda) agar tidak saling menimpa.
+    async function init() {
+        if (!CONFIGURED) { showLoginError('Isi SUPABASE_URL dan SUPABASE_ANON_KEY di config.js terlebih dahulu.'); $('loginBtn').disabled = true; return; }
+        if (!window.supabase) { showLoginError('Gagal memuat Supabase. Periksa koneksi.'); return; }
+        sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, { auth: { storageKey: 'bentore-admin-auth', persistSession: true, autoRefreshToken: true } });
+        const { data: { session } } = await sb.auth.getSession();
+        if (session && await verifyAdmin()) enterApp();
+    }
+    async function verifyAdmin() {
+        const { data, error } = await sb.rpc('is_admin');
+        if (error) { console.error(error); return false; }
+        return data === true;
+    }
+    function enterApp() {
+        $('loginScreen').style.display = 'none';
+        $('adminApp').style.display = 'block';
+        refreshCurrent();
+        if (autoTimer) clearInterval(autoTimer);
+        autoTimer = setInterval(() => { if (document.visibilityState === 'visible') refreshCurrent(); }, 20000);
+    }
+    async function doLogin() {
+        const email = $('adminEmail').value.trim(), password = $('adminPassword').value;
+        $('loginError').style.display = 'none';
+        if (!email || !password) { showLoginError('Isi email dan kata sandi.'); return; }
+        const btn = $('loginBtn'); btn.disabled = true;
+        try {
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) { showLoginError('Email atau kata sandi salah.'); return; }
+            if (!(await verifyAdmin())) { await sb.auth.signOut(); showLoginError('Akun ini bukan admin.'); return; }
+            $('adminPassword').value = '';
+            enterApp();
+        } catch (e) { showLoginError('Tidak bisa terhubung. Coba lagi.'); }
+        finally { btn.disabled = false; }
+    }
+    async function doLogout() {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+        await sb.auth.signOut();
+        $('adminApp').style.display = 'none';
+        $('loginScreen').style.display = 'flex';
+    }
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
+        document.querySelectorAll('.tab-page').forEach((p) => p.classList.remove('active'));
+        $('page-' + tab).classList.add('active');
+        refreshCurrent(true);
+    }
+    async function refreshCurrent(manual) {
+        try {
+            if (currentTab === 'dashboard') await renderDashboard();
+            else if (currentTab === 'drivers') await loadDrivers();
+            else if (currentTab === 'orders') await loadOrders();
+            else if (currentTab === 'ads' && (manual || !$('adZonesContainer').children.length)) await renderAdZones();
+            else if (currentTab === 'settings' && (manual || !$('setMapsKey').value)) await loadSettings();
+        } catch (e) { fail(e); }
+    }
+
+    const orderRow = (o, withAction) => `<tr>
+        <td>${esc(new Date(o.created_at).toLocaleString('id-ID'))}</td>
+        <td>${esc(o.passenger_name)}</td><td>${esc(o.driver_name)}</td>
+        <td>${esc(o.pickup)} → ${esc(o.drop_off)}</td>
+        <td>${o.service_type === 'cargo' ? '📦' : o.passenger_count}</td>
+        <td>${rupiah(o.fare)}</td><td>${o.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</td>
+        <td><span class="badge badge-${esc(o.status)}">${esc(STATUS[o.status] || o.status)}</span></td>
+        ${withAction ? `<td><button class="btn-small" style="background:var(--bg-light); color:var(--primary);" data-del-order="${esc(o.id)}">Hapus</button></td>` : ''}</tr>`;
+
+    async function renderDashboard() {
+        const [stats, recent] = await Promise.all([
+            sb.rpc('admin_stats'),
+            sb.from('orders').select('*').order('created_at', { ascending: false }).limit(10)
+        ]);
+        if (stats.error) throw stats.error;
+        if (recent.error) throw recent.error;
+        const s = stats.data;
+        $('statTotalDrivers').textContent = s.drivers; $('statOnlineDrivers').textContent = s.online;
+        $('statTotalOrders').textContent = s.orders; $('statTodayOrders').textContent = s.today_orders;
+        $('statTotalRevenue').textContent = 'Rp' + Number(s.revenue || 0).toLocaleString('id-ID');
+        $('recentOrdersBody').innerHTML = recent.data.length ? recent.data.map((o) => orderRow(o, false)).join('') : '<tr><td colspan="8" class="empty-state">Belum ada order</td></tr>';
+    }
+
+    async function loadDrivers() {
+        const { data, error } = await sb.from('drivers').select('*').order('created_at', { ascending: false }).limit(1000);
+        if (error) throw error;
+        driversCache = data; renderDrivers();
+    }
+    function renderDrivers() {
+        const q = ($('driverSearch').value || '').toLowerCase(), f = $('driverFilter').value;
+        let list = driversCache.filter((d) => (f === 'all' || d.status === f) &&
+            (!q || [d.name, d.contact, d.address].some((v) => (v || '').toLowerCase().includes(q))));
+        $('driversBody').innerHTML = list.length ? list.map((d) => {
+            const live = d.online && d.status === 'active' && (Date.now() - new Date(d.last_seen).getTime() < 5 * 60000);
+            return `<tr>
+            <td><b>${esc(d.name)}</b>${live ? ' <span class="badge badge-active">online</span>' : ''}${d.plate ? '<br><span style="color:var(--gray);font-size:12px;">' + esc(d.plate) + '</span>' : ''}</td>
+            <td style="font-size:12px;">${esc(d.contact)}<br><span style="color:var(--gray);">${esc(d.address || '-')}</span></td>
+            <td>${d.pay_cash ? '<span class="badge badge-cash">Tunai</span> ' : ''}${d.pay_transfer ? '<span class="badge badge-transfer">Transfer</span>' : ''}</td>
+            <td style="font-size:12px;">${d.pay_transfer ? esc(d.bank_name) + '<br><b>' + esc(d.bank_account) + '</b><br>a.n. ' + esc(d.bank_holder) : '-'}</td>
+            <td>⭐ ${Number(d.rating).toFixed(1)}</td>
+            <td>${d.total_orders}<br><span style="color:var(--gray);font-size:11px;">${rupiah(d.total_income)}</span></td>
+            <td><span class="badge badge-${esc(d.status)}">${d.status === 'blocked' ? 'Nonaktif' : 'Aktif'}</span></td>
+            <td class="action-btns">
+                <button class="btn-small" style="${d.status === 'blocked' ? 'background:#E7F7EF;color:var(--green)' : 'background:#FDEAEA;color:var(--red)'}" data-toggle-driver="${esc(d.id)}">${d.status === 'blocked' ? 'Aktifkan' : 'Nonaktifkan'}</button>
+                <button class="btn-small" style="background:var(--bg-light);color:var(--primary);" data-del-driver="${esc(d.id)}">Hapus</button>
+            </td></tr>`;
+        }).join('') : '<tr><td colspan="8" class="empty-state">Tidak ada data pengemudi</td></tr>';
+    }
+
+    async function loadOrders() {
+        const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false }).limit(500);
+        if (error) throw error;
+        ordersCache = data; renderOrders();
+    }
+    function filteredOrders() {
+        const q = ($('orderSearch').value || '').toLowerCase(), f = $('orderFilter').value;
+        return ordersCache.filter((o) => (f === 'all' || o.status === f) &&
+            (!q || (o.passenger_name || '').toLowerCase().includes(q) || (o.driver_name || '').toLowerCase().includes(q)));
+    }
+    function renderOrders() {
+        const list = filteredOrders();
+        $('ordersBody').innerHTML = list.length ? list.map((o) => orderRow(o, true)).join('') : '<tr><td colspan="9" class="empty-state">Tidak ada data order</td></tr>';
+    }
+    function csvCell(v) {
+        let s = String(v ?? '');
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // cegah formula injection di Excel/Sheets
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    function exportOrdersCsv() {
+        const list = filteredOrders();
+        if (!list.length) { toast('Tidak ada data untuk diekspor'); return; }
+        const head = ['Waktu', 'Penumpang', 'Kontak Penumpang', 'Pengemudi', 'Jemput', 'Tujuan', 'Jumlah', 'Layanan', 'Tarif', 'Bayar', 'Status'];
+        const rows = list.map((o) => [new Date(o.created_at).toLocaleString('id-ID'), o.passenger_name, o.passenger_contact, o.driver_name, o.pickup, o.drop_off, o.passenger_count, o.service_type, o.fare || '', o.payment_method, STATUS[o.status] || o.status]);
+        const csv = '﻿' + [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        a.download = 'bentore-order-' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    // Delegasi tombol tabel
+    document.addEventListener('click', async (e) => {
+        const t = e.target.closest('[data-toggle-driver],[data-del-driver],[data-del-order]');
+        if (!t) return;
+        try {
+            if (t.dataset.toggleDriver) {
+                const d = driversCache.find((x) => x.id === t.dataset.toggleDriver); if (!d) return;
+                const next = d.status === 'blocked' ? 'active' : 'blocked';
+                const { error } = await sb.from('drivers').update({ status: next }).eq('id', d.id);
+                if (error) throw error;
+                toast(next === 'blocked' ? 'Pengemudi dinonaktifkan' : 'Pengemudi diaktifkan kembali'); await loadDrivers();
+            } else if (t.dataset.delDriver) {
+                if (!confirm('Hapus pengemudi ini permanen? Order lama tetap tersimpan.')) return;
+                const { error } = await sb.from('drivers').delete().eq('id', t.dataset.delDriver);
+                if (error) throw error;
+                toast('Data pengemudi dihapus'); await loadDrivers();
+            } else if (t.dataset.delOrder) {
+                if (!confirm('Hapus order ini?')) return;
+                const { error } = await sb.from('orders').delete().eq('id', t.dataset.delOrder);
+                if (error) throw error;
+                toast('Order dihapus'); await loadOrders();
+            }
+        } catch (err) { fail(err); }
+    });
+
+    // ===== ADS =====
+    async function renderAdZones() {
+        const { data, error } = await sb.from('ads').select('*');
+        if (error) throw error;
+        $('adZonesContainer').innerHTML = AD_ZONES.map((z) => {
+            const ad = data.find((a) => a.zone_key === z.key) || { advertiser_name: '', image_url: '', link_url: '', active: false, start_date: '', end_date: '' };
+            return `<div class="ad-zone-card">
+                <div class="zone-head"><div><h4>${esc(z.label)}</h4><div class="zone-key">${esc(z.desc)}</div></div>
+                    <label class="switch"><input type="checkbox" id="adActive_${z.key}" ${ad.active ? 'checked' : ''}><span class="slider-toggle"></span></label></div>
+                <img class="ad-preview" id="adPreview_${z.key}" alt="" src="${esc(ad.image_url)}" style="${ad.image_url ? 'display:block;' : ''}">
+                <div class="settings-grid">
+                    <div class="form-group"><label>Nama Pengiklan</label><input type="text" maxlength="80" class="form-input" id="adName_${z.key}" value="${esc(ad.advertiser_name)}" placeholder="Contoh: Warung Kopi Tidore"></div>
+                    <div class="form-group"><label>Link Tujuan (WhatsApp/Website)</label><input type="text" class="form-input" id="adLink_${z.key}" value="${esc(ad.link_url)}" placeholder="https://wa.me/62..."></div>
+                </div>
+                <div class="form-group"><label>URL Gambar Banner</label><input type="text" class="form-input" id="adImage_${z.key}" value="${esc(ad.image_url)}" placeholder="https://..." data-preview="${z.key}"></div>
+                <div class="settings-grid">
+                    <div class="form-group"><label>Mulai Tayang (opsional)</label><input type="date" class="form-input" id="adStart_${z.key}" value="${esc(ad.start_date || '')}"></div>
+                    <div class="form-group"><label>Berakhir (opsional)</label><input type="date" class="form-input" id="adEnd_${z.key}" value="${esc(ad.end_date || '')}"></div>
+                </div>
+                <button class="btn-primary" data-save-ad="${z.key}"><i class="fas fa-save"></i> Simpan Iklan Zona Ini</button></div>`;
+        }).join('');
+    }
+    document.addEventListener('input', (e) => {
+        const k = e.target.dataset && e.target.dataset.preview; if (!k) return;
+        const url = e.target.value.trim(), img = $('adPreview_' + k);
+        if (/^https?:\/\//i.test(url)) { img.src = url; img.style.display = 'block'; } else img.style.display = 'none';
+    });
+    document.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-save-ad]'); if (!b) return;
+        const k = b.dataset.saveAd;
+        const rec = {
+            zone_key: k, advertiser_name: $('adName_' + k).value.trim(), image_url: $('adImage_' + k).value.trim(),
+            link_url: $('adLink_' + k).value.trim(), active: $('adActive_' + k).checked,
+            start_date: $('adStart_' + k).value || null, end_date: $('adEnd_' + k).value || null, updated_at: new Date().toISOString()
+        };
+        if (rec.active && !rec.image_url) { alert('⚠️ Isi URL gambar banner sebelum mengaktifkan iklan.'); return; }
+        if (!isUrl(rec.image_url) || !isUrl(rec.link_url)) { alert('⚠️ URL gambar dan link harus diawali http:// atau https://'); return; }
+        if (rec.start_date && rec.end_date && rec.end_date < rec.start_date) { alert('⚠️ Tanggal berakhir tidak boleh sebelum tanggal mulai.'); return; }
+        b.disabled = true;
+        try {
+            const { error } = await sb.from('ads').upsert(rec, { onConflict: 'zone_key' });
+            if (error) throw error;
+            toast('✅ Iklan zona disimpan');
+        } catch (err) { fail(err); } finally { b.disabled = false; }
+    });
+
+    // ===== SETTINGS =====
+    async function loadSettings() {
+        const { data, error } = await sb.from('settings').select('value').eq('key', 'google_maps_api_key').maybeSingle();
+        if (error) throw error;
+        $('setMapsKey').value = (data && data.value) || '';
+    }
+    async function saveMapsKey() {
+        const key = $('setMapsKey').value.trim();
+        if (key && !/^[A-Za-z0-9_\-]{20,}$/.test(key)) { alert('⚠️ Format API Key tidak valid.'); return; }
+        try {
+            const { error } = await sb.from('settings').upsert({ key: 'google_maps_api_key', value: key }, { onConflict: 'key' });
+            if (error) throw error;
+            toast(key ? '✅ Google Maps API Key disimpan' : 'API Key dikosongkan, fitur peta nonaktif');
+        } catch (e) { fail(e); }
+    }
+    async function saveAdminPassword() {
+        const p1 = $('newAdminPass').value, p2 = $('newAdminPass2').value;
+        if (p1.length < 8) { alert('⚠️ Kata sandi minimal 8 karakter.'); return; }
+        if (p1 !== p2) { alert('⚠️ Kata sandi tidak sama.'); return; }
+        try {
+            const { error } = await sb.auth.updateUser({ password: p1 });
+            if (error) throw error;
+            $('newAdminPass').value = ''; $('newAdminPass2').value = '';
+            toast('✅ Kata sandi admin diperbarui');
+        } catch (e) { fail(e); }
+    }
+
+    Object.assign(window, { doLogin, doLogout, switchTab, refreshCurrent, renderDrivers, renderOrders, exportOrdersCsv, saveMapsKey, saveAdminPassword });
+    window.addEventListener('load', () => init().catch(fail));
+})();
+</script>
+</body>
+</html>
