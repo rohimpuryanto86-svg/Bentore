@@ -7,6 +7,7 @@
     <meta name="description" content="BENTORE - Transportasi digital bentor Tidore">
     <title>BENTORE - Bentor Tidore</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -89,10 +90,16 @@
         .payment-note { background: var(--bg-light); border: 1px dashed var(--secondary-light); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--primary-dark); margin-bottom: 16px; display: flex; gap: 8px; align-items: flex-start; }
         .payment-note i { margin-top: 2px; }
         #routePreviewMap { width: 100%; height: 160px; border-radius: 12px; margin-bottom: 16px; display: none; background: #E8E0F0; }
-        .maps-off-hint { font-size: 12px; color: var(--gray); background: #FFF8E6; border: 1px dashed #E0C061; padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; display: none; }
 
         #nearbyBentors { padding: 0 16px; display: none; }
         #nearbyBentors h3 { margin-bottom: 12px; }
+
+        #routePreviewMap { position: relative; z-index: 0; isolation: isolate; }
+        .ac-list { position: fixed; z-index: 500; background: var(--white); border: 1px solid #E8E0F0; border-radius: 12px; box-shadow: 0 8px 24px rgba(26,26,46,0.18); display: none; overflow: hidden; }
+        .ac-item { padding: 11px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #F4F1FC; word-break: break-word; }
+        .ac-item:last-child { border-bottom: none; }
+        .ac-item:active, .ac-item:hover { background: var(--bg-light); }
+        .osm-credit { font-size: 11px; color: var(--gray); margin: -8px 0 14px; }
         .bentor-item { background: var(--white); padding: 16px; border-radius: var(--radius); margin-bottom: 10px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .bentor-item .name { font-weight: 600; word-break: break-word; }
         .bentor-item .distance { font-size: 13px; color: var(--gray); margin-top: 2px; }
@@ -303,7 +310,6 @@
                     <i class="fas fa-wallet"></i>
                     <span>Bentor memuat hingga <b>3 penumpang</b>. Tarif perjalanan akan ditentukan langsung oleh pengemudi. Pembayaran: <b>Tunai</b> atau <b>Transfer</b> ke rekening pengemudi.</span>
                 </div>
-                <p class="maps-off-hint" id="mapsOffHint"><i class="fas fa-map"></i> Pencarian alamat otomatis belum aktif. Anda tetap bisa mengetik lokasi secara manual.</p>
                 <div class="form-group">
                     <label for="pickupLocation"><i class="fas fa-map-marker-alt"></i> Lokasi Jemput</label>
                     <div class="input-with-btn">
@@ -316,6 +322,7 @@
                     <input type="text" id="dropLocation" maxlength="200" placeholder="Contoh: Pantai Tafaga" class="form-input" autocomplete="off">
                 </div>
                 <div id="routePreviewMap"></div>
+                <p class="osm-credit">Pencarian alamat &amp; peta: © kontributor OpenStreetMap</p>
                 <div class="form-group">
                     <label for="passengerCount"><i class="fas fa-users"></i> Jumlah Penumpang</label>
                     <select id="passengerCount" class="form-input">
@@ -496,6 +503,7 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
@@ -532,7 +540,7 @@
     let pickupLatLng = null, dropLatLng = null, driverAddrLatLng = null;
     let regDriverLatLng = null, regPassengerLatLng = null, profileLatLng = null;
     let pollTimer = null, driverTimer = null, heartbeatTimer = null, rtChannel = null, rtDebounce = null;
-    let refreshingDriver = false, mapsReady = false, adsCache = { at: 0, list: [] };
+    let refreshingDriver = false, adsCache = { at: 0, list: [] };
 
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -621,7 +629,7 @@
         }
         userId = session.user.id;
         subscribeRealtime();
-        loadGoogleMapsIfConfigured();
+        initMaps();
         renderAdZone('home_top', 'adZoneHomeTop');
         const saved = localStorage.getItem(LS_ROLE);
         if (saved === 'driver' || saved === 'passenger') await setRole(saved);
@@ -671,26 +679,62 @@
     }
 
     // =====================================================================
-    // GOOGLE MAPS (key diatur admin, disimpan di tabel settings)
+    // PETA & PENCARIAN ALAMAT (OpenStreetMap: Leaflet + Photon, tanpa API key)
     // =====================================================================
-    async function loadGoogleMapsIfConfigured() {
-        try {
-            const { data } = await sb.from('settings').select('value').eq('key', 'google_maps_api_key').maybeSingle();
-            const key = data && data.value;
-            if (!key) { $('mapsOffHint').style.display = 'block'; return; }
-            if (window.google && window.google.maps) { onMapsReady(); return; }
-            window.gm_authFailure = () => { mapsReady = false; $('mapsOffHint').style.display = 'block'; toast('Google Maps API Key bermasalah. Hubungi admin.'); };
-            window.onMapsReady = onMapsReady;
-            const s = document.createElement('script');
-            s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&callback=onMapsReady';
-            s.async = true;
-            s.onerror = () => { $('mapsOffHint').style.display = 'block'; };
-            document.head.appendChild(s);
-        } catch (e) { $('mapsOffHint').style.display = 'block'; }
+    const PHOTON = 'https://photon.komoot.io';
+    const BIAS = { lat: 0.68, lng: 127.40 };           // sekitar Tidore
+    const ID_BBOX = '95,-11.5,141.5,6.5';              // batasi hasil ke Indonesia
+    let leafletMap = null, routeLayer = null, acBox = null, acTimer = null, acSeq = 0;
+
+    function placeLabel(p) {
+        const street = [p.street, p.housenumber].filter(Boolean).join(' ');
+        const parts = [p.name, street, p.district || p.locality, p.city || p.county, p.state].filter(Boolean);
+        return [...new Set(parts)].join(', ');
     }
-    function onMapsReady() {
-        mapsReady = true;
-        $('mapsOffHint').style.display = 'none';
+    async function photonSearch(q) {
+        const url = PHOTON + '/api/?q=' + encodeURIComponent(q) + '&limit=6&lat=' + BIAS.lat + '&lon=' + BIAS.lng + '&bbox=' + ID_BBOX;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('search_failed');
+        const j = await r.json();
+        return (j.features || []).map((f) => ({ label: placeLabel(f.properties || {}), lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] })).filter((x) => x.label);
+    }
+    function hideAc() { acSeq++; if (acBox) { acBox.style.display = 'none'; acBox.innerHTML = ''; } }
+    function showAc(input, items, onPlace) {
+        if (!acBox) { acBox = document.createElement('div'); acBox.className = 'ac-list'; document.body.appendChild(acBox); }
+        acBox.innerHTML = '';
+        if (!items.length) { acBox.style.display = 'none'; return; }
+        items.forEach((it) => {
+            const d = document.createElement('div');
+            d.className = 'ac-item';
+            d.textContent = it.label;
+            d.addEventListener('pointerdown', (e) => { e.preventDefault(); input.value = it.label; hideAc(); onPlace({ lat: it.lat, lng: it.lng }); });
+            acBox.appendChild(d);
+        });
+        const r = input.getBoundingClientRect();
+        Object.assign(acBox.style, { display: 'block', left: r.left + 'px', top: (r.bottom + 4) + 'px', width: r.width + 'px' });
+    }
+    function attachAutocomplete(inputId, onPlace) {
+        const el = $(inputId);
+        if (!el) return;
+        el.addEventListener('input', () => {
+            onPlace(null);                       // ketik manual -> koordinat lama dibuang
+            clearTimeout(acTimer);
+            const q = el.value.trim();
+            if (q.length < 3) { hideAc(); return; }
+            const my = ++acSeq;
+            acTimer = setTimeout(async () => {
+                try {
+                    const items = await photonSearch(q);
+                    if (my === acSeq && document.activeElement === el) showAc(el, items, onPlace);
+                } catch (e) { /* saran gagal dimuat: pengguna tetap bisa mengetik manual */ }
+            }, 450);
+        });
+        el.addEventListener('blur', () => setTimeout(hideAc, 200));
+    }
+    window.addEventListener('scroll', hideAc, true);
+    window.addEventListener('resize', hideAc);
+
+    function initMaps() {
         attachAutocomplete('pickupLocation', (p) => { pickupLatLng = p; maybeShowRoutePreview(); });
         attachAutocomplete('dropLocation', (p) => { dropLatLng = p; maybeShowRoutePreview(); });
         attachAutocomplete('regAddress', (p) => { regDriverLatLng = p; });
@@ -698,45 +742,41 @@
         attachAutocomplete('pProfileAddress', (p) => { profileLatLng = p; });
         attachAutocomplete('setDriverAddress', (p) => { driverAddrLatLng = p; });
     }
-    function attachAutocomplete(inputId, onPlace) {
-        const el = $(inputId);
-        if (!el || !window.google || !google.maps.places) return;
-        try {
-            const ac = new google.maps.places.Autocomplete(el, { fields: ['geometry'], componentRestrictions: { country: 'id' } });
-            ac.addListener('place_changed', () => {
-                const place = ac.getPlace();
-                if (place && place.geometry && place.geometry.location) onPlace({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
-            });
-        } catch (e) { console.warn('Autocomplete tidak tersedia', e); }
-    }
-    // Jika pengguna mengetik manual setelah memilih tempat, koordinat lama dibuang
-    $('pickupLocation').addEventListener('input', () => { pickupLatLng = null; maybeShowRoutePreview(); });
-    $('dropLocation').addEventListener('input', () => { dropLatLng = null; maybeShowRoutePreview(); });
 
     function useMyLocation() {
         if (!navigator.geolocation) { toast('Perangkat tidak mendukung lokasi otomatis.'); return; }
         toast('Mengambil lokasi Anda...');
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const { latitude, longitude } = pos.coords;
-            const here = { lat: latitude, lng: longitude };
-            const fallback = latitude.toFixed(5) + ', ' + longitude.toFixed(5);
-            if (mapsReady && google.maps.Geocoder) {
-                new google.maps.Geocoder().geocode({ location: here }, (results, status) => {
-                    $('pickupLocation').value = (status === 'OK' && results[0]) ? results[0].formatted_address : fallback;
-                    pickupLatLng = here; maybeShowRoutePreview();
-                });
-            } else { $('pickupLocation').value = fallback; pickupLatLng = here; }
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            let label = here.lat.toFixed(5) + ', ' + here.lng.toFixed(5);
+            try {
+                const r = await fetch(PHOTON + '/reverse?lon=' + here.lng + '&lat=' + here.lat);
+                const j = await r.json();
+                const f = j.features && j.features[0];
+                if (f) { const l = placeLabel(f.properties || {}); if (l) label = l; }
+            } catch (e) { /* pakai koordinat */ }
+            $('pickupLocation').value = label;
+            pickupLatLng = here;
+            maybeShowRoutePreview();
         }, () => toast('Gagal mengambil lokasi. Izinkan akses lokasi pada browser.'), { enableHighAccuracy: true, timeout: 10000 });
     }
+
     function maybeShowRoutePreview() {
         const box = $('routePreviewMap');
-        if (!mapsReady || !pickupLatLng || !dropLatLng) { box.style.display = 'none'; return; }
+        if (!window.L || !pickupLatLng || !dropLatLng) { box.style.display = 'none'; return; }
         box.style.display = 'block';
-        const map = new google.maps.Map(box, { zoom: 13, center: pickupLatLng, disableDefaultUI: true });
-        new google.maps.Marker({ position: pickupLatLng, map, label: 'J' });
-        new google.maps.Marker({ position: dropLatLng, map, label: 'T' });
-        new google.maps.Polyline({ path: [pickupLatLng, dropLatLng], strokeColor: '#6C3CE1', strokeWeight: 4 }).setMap(map);
-        const b = new google.maps.LatLngBounds(); b.extend(pickupLatLng); b.extend(dropLatLng); map.fitBounds(b, 40);
+        const a = [pickupLatLng.lat, pickupLatLng.lng], b = [dropLatLng.lat, dropLatLng.lng];
+        if (!leafletMap) {
+            leafletMap = L.map(box, { zoomControl: false }).setView(a, 13);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(leafletMap);
+            routeLayer = L.layerGroup().addTo(leafletMap);
+        }
+        routeLayer.clearLayers();
+        L.circleMarker(a, { radius: 9, color: '#fff', weight: 2, fillColor: '#2FB380', fillOpacity: 1 }).bindTooltip('Jemput').addTo(routeLayer);
+        L.circleMarker(b, { radius: 9, color: '#fff', weight: 2, fillColor: '#FF4444', fillOpacity: 1 }).bindTooltip('Tujuan').addTo(routeLayer);
+        L.polyline([a, b], { color: '#6C3CE1', weight: 4 }).addTo(routeLayer);
+        leafletMap.invalidateSize();
+        leafletMap.fitBounds([a, b], { padding: [30, 30], maxZoom: 16 });
     }
 
     // =====================================================================
