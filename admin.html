@@ -29,7 +29,7 @@
     .btn-outline { background: var(--white); color: var(--primary); border: 2px solid var(--primary); padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-small { border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
     .login-error { color: var(--red); font-size: 13px; margin-top: 10px; display: none; }
-
+ 
     #adminApp { display: none; min-height: 100vh; }
     header { background: var(--primary); color: var(--white); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow); }
     header .title { font-weight: 700; font-size: 18px; }
@@ -41,7 +41,7 @@
     .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
     .tab-page { display: none; }
     .tab-page.active { display: block; }
-
+ 
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 20px; }
     .stat-card { background: var(--white); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
     .stat-card .label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
@@ -86,7 +86,7 @@
 </style>
 </head>
 <body>
-
+ 
 <div id="loginScreen">
     <div class="login-box">
         <div class="logo">🛺🔐</div>
@@ -98,7 +98,7 @@
         <p class="login-error" id="loginError"></p>
     </div>
 </div>
-
+ 
 <div id="adminApp">
     <header>
         <div class="title">💜 BENTORE <span style="opacity:.8; font-weight:400;">· Admin</span></div>
@@ -114,7 +114,7 @@
         <div class="tab" data-tab="ads" onclick="switchTab('ads')"><i class="fas fa-rectangle-ad"></i> Iklan</div>
         <div class="tab" data-tab="settings" onclick="switchTab('settings')"><i class="fas fa-sliders"></i> Pengaturan</div>
     </div>
-
+ 
     <div class="container">
         <div class="tab-page active" id="page-dashboard">
             <div class="stat-grid">
@@ -132,7 +132,7 @@
                 </table></div>
             </div>
         </div>
-
+ 
         <div class="tab-page" id="page-drivers">
             <div class="panel">
                 <h3><span><i class="fas fa-motorcycle"></i> Kelola Pengemudi</span></h3>
@@ -148,7 +148,7 @@
                 </table></div>
             </div>
         </div>
-
+ 
         <div class="tab-page" id="page-orders">
             <div class="panel">
                 <h3><span><i class="fas fa-receipt"></i> Semua Order</span><button class="btn-outline" onclick="exportOrdersCsv()"><i class="fas fa-file-csv"></i> Ekspor CSV</button></h3>
@@ -168,7 +168,7 @@
                 </table></div>
             </div>
         </div>
-
+ 
         <div class="tab-page" id="page-ads">
             <div class="panel">
                 <h3><span><i class="fas fa-rectangle-ad"></i> Kelola Zona Iklan</span></h3>
@@ -176,14 +176,8 @@
                 <div id="adZonesContainer"></div>
             </div>
         </div>
-
+ 
         <div class="tab-page" id="page-settings">
-            <div class="panel">
-                <h3><span><i class="fas fa-map-location-dot"></i> Integrasi Google Maps</span></h3>
-                <p class="sub">Isi Google Maps API Key agar pencarian alamat &amp; peta aktif di app. Aktifkan Maps JavaScript API &amp; Places API, dan batasi key dengan HTTP referrer (domain situs Anda).</p>
-                <div class="form-group"><label>Google Maps API Key</label><input type="text" id="setMapsKey" class="form-input" placeholder="AIzaSy..."></div>
-                <button class="btn-primary" onclick="saveMapsKey()"><i class="fas fa-save"></i> Simpan API Key</button>
-            </div>
             <div class="panel">
                 <h3><span><i class="fas fa-lock"></i> Ubah Kata Sandi Admin</span></h3>
                 <div class="settings-grid">
@@ -195,9 +189,9 @@
         </div>
     </div>
 </div>
-
+ 
 <div id="toast"></div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
@@ -216,14 +210,14 @@
     const rupiah = (n) => n ? 'Rp' + Number(n).toLocaleString('id-ID') : '-';
     const isUrl = (u) => !u || /^https?:\/\//i.test(u);
     let sb = null, currentTab = 'dashboard', ordersCache = [], driversCache = [], autoTimer = null;
-
+ 
     function toast(msg) {
         const t = $('toast'); t.textContent = msg; t.classList.add('show');
         clearTimeout(window._t); window._t = setTimeout(() => t.classList.remove('show'), 3000);
     }
     function fail(e) { console.error(e); toast('Gagal: ' + ((e && e.message) || 'kesalahan tidak diketahui')); }
     function showLoginError(msg) { const el = $('loginError'); el.textContent = msg; el.style.display = 'block'; }
-
+ 
     // Sesi admin dipisah dari sesi aplikasi utama (storageKey berbeda) agar tidak saling menimpa.
     async function init() {
         if (!CONFIGURED) { showLoginError('Isi SUPABASE_URL dan SUPABASE_ANON_KEY di config.js terlebih dahulu.'); $('loginBtn').disabled = true; return; }
@@ -277,10 +271,9 @@
             else if (currentTab === 'drivers') await loadDrivers();
             else if (currentTab === 'orders') await loadOrders();
             else if (currentTab === 'ads' && (manual || !$('adZonesContainer').children.length)) await renderAdZones();
-            else if (currentTab === 'settings' && (manual || !$('setMapsKey').value)) await loadSettings();
         } catch (e) { fail(e); }
     }
-
+ 
     const orderRow = (o, withAction) => `<tr>
         <td>${esc(new Date(o.created_at).toLocaleString('id-ID'))}</td>
         <td>${esc(o.passenger_name)}</td><td>${esc(o.driver_name)}</td>
@@ -289,7 +282,7 @@
         <td>${rupiah(o.fare)}</td><td>${o.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</td>
         <td><span class="badge badge-${esc(o.status)}">${esc(STATUS[o.status] || o.status)}</span></td>
         ${withAction ? `<td><button class="btn-small" style="background:var(--bg-light); color:var(--primary);" data-del-order="${esc(o.id)}">Hapus</button></td>` : ''}</tr>`;
-
+ 
     async function renderDashboard() {
         const [stats, recent] = await Promise.all([
             sb.rpc('admin_stats'),
@@ -303,7 +296,7 @@
         $('statTotalRevenue').textContent = 'Rp' + Number(s.revenue || 0).toLocaleString('id-ID');
         $('recentOrdersBody').innerHTML = recent.data.length ? recent.data.map((o) => orderRow(o, false)).join('') : '<tr><td colspan="8" class="empty-state">Belum ada order</td></tr>';
     }
-
+ 
     async function loadDrivers() {
         const { data, error } = await sb.from('drivers').select('*').order('created_at', { ascending: false }).limit(1000);
         if (error) throw error;
@@ -329,7 +322,7 @@
             </td></tr>`;
         }).join('') : '<tr><td colspan="8" class="empty-state">Tidak ada data pengemudi</td></tr>';
     }
-
+ 
     async function loadOrders() {
         const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false }).limit(500);
         if (error) throw error;
@@ -360,7 +353,7 @@
         a.download = 'bentore-order-' + new Date().toISOString().slice(0, 10) + '.csv';
         document.body.appendChild(a); a.click(); a.remove();
     }
-
+ 
     // Delegasi tombol tabel
     document.addEventListener('click', async (e) => {
         const t = e.target.closest('[data-toggle-driver],[data-del-driver],[data-del-order]');
@@ -385,7 +378,7 @@
             }
         } catch (err) { fail(err); }
     });
-
+ 
     // ===== ADS =====
     async function renderAdZones() {
         const { data, error } = await sb.from('ads').select('*');
@@ -431,22 +424,8 @@
             toast('✅ Iklan zona disimpan');
         } catch (err) { fail(err); } finally { b.disabled = false; }
     });
-
+ 
     // ===== SETTINGS =====
-    async function loadSettings() {
-        const { data, error } = await sb.from('settings').select('value').eq('key', 'google_maps_api_key').maybeSingle();
-        if (error) throw error;
-        $('setMapsKey').value = (data && data.value) || '';
-    }
-    async function saveMapsKey() {
-        const key = $('setMapsKey').value.trim();
-        if (key && !/^[A-Za-z0-9_\-]{20,}$/.test(key)) { alert('⚠️ Format API Key tidak valid.'); return; }
-        try {
-            const { error } = await sb.from('settings').upsert({ key: 'google_maps_api_key', value: key }, { onConflict: 'key' });
-            if (error) throw error;
-            toast(key ? '✅ Google Maps API Key disimpan' : 'API Key dikosongkan, fitur peta nonaktif');
-        } catch (e) { fail(e); }
-    }
     async function saveAdminPassword() {
         const p1 = $('newAdminPass').value, p2 = $('newAdminPass2').value;
         if (p1.length < 8) { alert('⚠️ Kata sandi minimal 8 karakter.'); return; }
@@ -458,8 +437,8 @@
             toast('✅ Kata sandi admin diperbarui');
         } catch (e) { fail(e); }
     }
-
-    Object.assign(window, { doLogin, doLogout, switchTab, refreshCurrent, renderDrivers, renderOrders, exportOrdersCsv, saveMapsKey, saveAdminPassword });
+ 
+    Object.assign(window, { doLogin, doLogout, switchTab, refreshCurrent, renderDrivers, renderOrders, exportOrdersCsv, saveAdminPassword });
     window.addEventListener('load', () => init().catch(fail));
 })();
 </script>
