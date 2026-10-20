@@ -782,30 +782,45 @@
         leafletMap.fitBounds([a, b], { padding: [30, 30], maxZoom: 16 });
         drawRoadRoute(a, b);
     }
-    // Rute jalan lewat OSRM (gratis, tanpa API key). Jika gagal, tetap pakai garis lurus.
+    // Rute jalan lewat server OSRM gratis (tanpa API key). Coba beberapa server; jika semua gagal, tetap pakai garis lurus.
+    const ROUTE_SERVERS = [
+        'https://router.project-osrm.org/route/v1/driving/',
+        'https://routing.openstreetmap.de/routed-car/route/v1/driving/'
+    ];
+    async function fetchRoute(base, a, b) {
+        const ctl = new AbortController();
+        const timer = setTimeout(() => ctl.abort(), 9000);
+        try {
+            const r = await fetch(base + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson', { signal: ctl.signal });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const j = await r.json();
+            if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error(j.code || 'NoRoute');
+            return j.routes[0];
+        } finally { clearTimeout(timer); }
+    }
     async function drawRoadRoute(a, b) {
         const my = routeSeq, info = $('routeInfo');
         info.style.display = 'block';
         info.textContent = 'Menghitung rute jalan...';
         const straight = haversineKm(pickupLatLng, dropLatLng);
-        try {
-            const ctl = new AbortController();
-            const timer = setTimeout(() => ctl.abort(), 8000);
-            const r = await fetch('https://router.project-osrm.org/route/v1/driving/' + a[1] + ',' + a[0] + ';' + b[1] + ',' + b[0] + '?overview=full&geometries=geojson', { signal: ctl.signal });
-            clearTimeout(timer);
-            const j = await r.json();
-            if (my !== routeSeq) return;                         // pilihan sudah berubah
-            if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error('no_route');
-            const rt = j.routes[0];
-            routeKm = Math.max(0.1, Math.round(rt.distance / 100) / 10);
-            lineLayer.clearLayers();
-            const line = L.geoJSON(rt.geometry, { style: { color: '#6C3CE1', weight: 5, opacity: 0.9 } }).addTo(lineLayer);
-            leafletMap.fitBounds(line.getBounds(), { padding: [30, 30], maxZoom: 16 });
-            info.textContent = '🛣️ Jarak lewat jalan ± ' + routeKm + ' km';
-        } catch (e) {
-            if (my !== routeSeq) return;
-            info.textContent = straight != null ? '📏 Jarak garis lurus ± ' + straight + ' km (rute jalan tidak tersedia)' : '';
+        let reason = '';
+        for (const base of ROUTE_SERVERS) {
+            try {
+                const rt = await fetchRoute(base, a, b);
+                if (my !== routeSeq) return;                     // pilihan sudah berubah
+                routeKm = Math.max(0.1, Math.round(rt.distance / 100) / 10);
+                lineLayer.clearLayers();
+                const line = L.geoJSON(rt.geometry, { style: { color: '#6C3CE1', weight: 5, opacity: 0.9 } }).addTo(lineLayer);
+                leafletMap.fitBounds(line.getBounds(), { padding: [30, 30], maxZoom: 16 });
+                info.textContent = '🛣️ Jarak lewat jalan ± ' + routeKm + ' km';
+                return;
+            } catch (e) {
+                console.warn('Rute gagal di', base, e);
+                reason = e.name === 'AbortError' ? 'server lambat' : (e.message === 'Failed to fetch' ? 'server tidak terjangkau' : e.message);
+            }
         }
+        if (my !== routeSeq) return;
+        info.textContent = straight != null ? '📏 Jarak garis lurus ± ' + straight + ' km (rute jalan gagal: ' + reason + ')' : '';
     }
  
     // =====================================================================
@@ -1399,4 +1414,3 @@
 </script>
 </body>
 </html>
- 
